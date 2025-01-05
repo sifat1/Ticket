@@ -1,3 +1,4 @@
+using App.Services;
 using DB.DBcontext;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +15,8 @@ builder.Services.AddDbContext<ShowDbContext>(options =>
         .EnableDetailedErrors()
         .EnableSensitiveDataLogging());
 
-
+builder.Services.AddScoped<ShowService>();
+builder.Services.AddScoped<VenueService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

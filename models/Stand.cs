@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ShowTickets.Ticketmodels{
     public class Stand
     {
@@ -6,6 +8,7 @@ namespace ShowTickets.Ticketmodels{
         public int SeatCount { get; set; }
 
         public long VenueId { get; set; }
+        [JsonIgnore]
         public Venue Venue { get; set; }
 
         public ICollection<StandSeat> StandSeats { get; set; }
