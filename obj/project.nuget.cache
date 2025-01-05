@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "vKIGrx3iNY8/vu1rwiE3HN4SaFgjLVGske9SG6GVXv661idGLBqgFnhT3FwPeEjSJ9MVrPY/qLtm7ZJgsN/4fg==",
+  "dgSpecHash": "98XCbK5kM6kmqcvbWZ/z5/hvPWLeJHOadDmDjm/5oZvhCoJxxK2G03zW0u4eiDiaJ3/aiL9eLJfLw9k28s9mng==",
   "success": true,
   "projectFilePath": "/home/sifat/Documents/c#dev/Ticket/Ticket.csproj",
   "expectedPackageFiles": [
@@ -51,6 +51,8 @@
     "/home/sifat/.nuget/packages/microsoft.sqlserver.server/1.0.0/microsoft.sqlserver.server.1.0.0.nupkg.sha512",
     "/home/sifat/.nuget/packages/microsoft.win32.systemevents/6.0.0/microsoft.win32.systemevents.6.0.0.nupkg.sha512",
     "/home/sifat/.nuget/packages/mono.texttemplating/3.0.0/mono.texttemplating.3.0.0.nupkg.sha512",
+    "/home/sifat/.nuget/packages/npgsql/9.0.2/npgsql.9.0.2.nupkg.sha512",
+    "/home/sifat/.nuget/packages/npgsql.entityframeworkcore.postgresql/9.0.2/npgsql.entityframeworkcore.postgresql.9.0.2.nupkg.sha512",
     "/home/sifat/.nuget/packages/swashbuckle.aspnetcore/7.2.0/swashbuckle.aspnetcore.7.2.0.nupkg.sha512",
     "/home/sifat/.nuget/packages/swashbuckle.aspnetcore.swagger/7.2.0/swashbuckle.aspnetcore.swagger.7.2.0.nupkg.sha512",
     "/home/sifat/.nuget/packages/swashbuckle.aspnetcore.swaggergen/7.2.0/swashbuckle.aspnetcore.swaggergen.7.2.0.nupkg.sha512",

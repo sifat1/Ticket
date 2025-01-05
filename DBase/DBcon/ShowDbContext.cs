@@ -12,6 +12,8 @@ using Microsoft.EntityFrameworkCore;
         public DbSet<Show> Shows { get; set; }
         public DbSet<ShowSeat> ShowSeats { get; set; }
 
+        public DbSet<User> Users { get; set; }
+
         public ShowDbContext(DbContextOptions<ShowDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -36,7 +38,7 @@ using Microsoft.EntityFrameworkCore;
             modelBuilder.Entity<ShowSeat>()
                 .HasOne(ss => ss.StandSeat)
                 .WithMany()
-                .HasForeignKey(ss => ss.SeatId);
+                .HasForeignKey(ss => ss.StandSeatId);
         }
     }
 

@@ -1,7 +1,7 @@
 namespace ShowTickets.Ticketmodels{
     public class Venue
     {
-        public int VenueId { get; set; }
+        public long VenueId { get; set; }
         public string Name { get; set; }
         public string Location { get; set; }
         public int TotalStands { get; set; }

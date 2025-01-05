@@ -22,7 +22,7 @@ namespace App.services
             try
             {
                 var showSeat = await _context.ShowSeats
-                    .Where(ss => ss.ShowId == request.ShowId && ss.SeatId == request.SeatId)
+                    .Where(ss => ss.ShowId == request.ShowId && ss.StandSeatId == request.SeatId)
                     .FirstOrDefaultAsync();
 
                 if (showSeat == null)
@@ -63,7 +63,7 @@ namespace App.services
             try
             {
                 var showSeat = await _context.ShowSeats
-                    .Where(ss => ss.ShowId == request.ShowId && ss.SeatId == request.SeatId)
+                    .Where(ss => ss.ShowId == request.ShowId && ss.StandSeatId == request.SeatId)
                     .FirstOrDefaultAsync();
 
                 if (showSeat == null)
@@ -101,7 +101,7 @@ namespace App.services
             try
             {
                 var showSeat = await _context.ShowSeats
-                    .Where(ss => ss.ShowId == request.ShowId && ss.SeatId == request.SeatId)
+                    .Where(ss => ss.ShowId == request.ShowId && ss.StandSeatId == request.SeatId)
                     .FirstOrDefaultAsync();
 
                 if (showSeat == null)
