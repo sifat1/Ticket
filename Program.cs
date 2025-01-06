@@ -1,6 +1,8 @@
 using App.Services;
 using DB.DBcontext;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
+using ShowTickets.BackgroundProcessing;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +19,13 @@ builder.Services.AddDbContext<ShowDbContext>(options =>
 
 builder.Services.AddScoped<ShowService>();
 builder.Services.AddScoped<VenueService>();
+builder.Services.AddScoped<EventPublisher>();
+builder.Services.AddHangfireConfig(builder.Configuration);
+
 var app = builder.Build();
+
+app.UseHangfireDashboard();
+app.MapHangfireDashboard();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

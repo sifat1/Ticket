@@ -2,16 +2,19 @@ using DB.DBcontext;
 using Dtos;
 using Microsoft.EntityFrameworkCore;
 using ShowTickets.Ticketmodels;
+using Ticket.Events;
 
 namespace App.Services
 {
     public class ShowService
     {
         private readonly ShowDbContext _context;
+        private readonly EventPublisher _eventPublisher;
 
-        public ShowService(ShowDbContext context)
+        public ShowService(ShowDbContext context, EventPublisher eventPublisher)
         {
             _context = context;
+            _eventPublisher = eventPublisher;
         }
 
         public async Task<string> BookTicketAsync(BookingRequest request)
@@ -138,5 +141,15 @@ namespace App.Services
                 .Include(ss => ss.StandSeat)
                 .ToListAsync();
         }
+        public async Task AddStandAsync(Stand stand)
+        {
+            _context.Stands.Add(stand);
+            await _context.SaveChangesAsync();
+
+            var event_ = new StandAddedEvent { StandId = stand.StandId, SeatCount = stand.SeatCount };
+            _eventPublisher.PublishAsync(event_);
+        }
+
+        
     }
 }
