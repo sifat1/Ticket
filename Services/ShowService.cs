@@ -149,7 +149,6 @@ namespace App.Services
             var event_ = new StandAddedEvent { StandId = stand.StandId, SeatCount = stand.SeatCount };
             _eventPublisher.PublishAsync(event_);
         }
-
         
     }
 }

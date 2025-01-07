@@ -59,5 +59,11 @@ namespace App.Controllers
             var result = await _showService.BookTicketWithOptimisticConcurrencyAsync(request);
             return Ok(new { Message = result });
         }
+
+        [HttpPost("add-show")]
+        public async void AddShowAsync(CreateShow show)
+        {
+            
+        }
     }
 }

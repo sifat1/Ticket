@@ -2,7 +2,7 @@ using App.Services;
 using DB.DBcontext;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
-using ShowTickets.BackgroundProcessing;
+
 
 var builder = WebApplication.CreateBuilder(args);
 

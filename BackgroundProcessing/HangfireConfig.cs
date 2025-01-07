@@ -1,10 +1,15 @@
 using Hangfire;
-
+using Hangfire.PostgreSql;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 public static class HangfireConfig
 {
-    public static void Configure(IServiceCollection services, IConfiguration configuration)
+    public static void AddHangfireConfig(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddHangfire(x => x.UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
+        // Configure Hangfire with PostgreSQL storage
+        services.AddHangfire(x =>
+            x.UsePostgreSqlStorage(configuration.GetConnectionString("DefaultConnection")));
         services.AddHangfireServer();
     }
 }
