@@ -20,10 +20,13 @@ namespace App.Services
             _context.Stands.Add(stand);
             await _context.SaveChangesAsync();
 
-            var event_ = new StandAddedEvent { StandId = stand.StandId, SeatCount = stand.SeatCount
-    };
-    _eventPublisher.PublishAsync(event_);
-}
-}
+            var event_ = new StandAddedEvent
+            {
+                StandId = stand.StandId,
+                SeatCount = stand.SeatCount
+            };
+            _eventPublisher.PublishAsync(event_);
+        }
+    }
 
 }

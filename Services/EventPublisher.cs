@@ -7,7 +7,7 @@ namespace App.Services
 {
     public class EventPublisher
     {
-        public void PublishAsync(StandAddedEvent standEvent)
+        public async Task PublishAsync(StandAddedEvent standEvent)
         {
             BackgroundJob.Enqueue<StandAddedHandler>(handler => handler.HandleAsync(standEvent));
         }
