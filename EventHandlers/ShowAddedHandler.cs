@@ -30,23 +30,42 @@ namespace Ticket.EventHandler
         }
         public async Task HandleShowAsync(ShowAddedEvent showEvent)
         {
-            var venues = await _context.Shows.Where(e => e.ShowId 
-            == showEvent.ShowId).Select(e => e.VenueId).ToListAsync();
+            // Fetch venue ID associated with the show
+            var venueId = await _context.Shows
+                .Where(e => e.ShowId == showEvent.ShowId)
+                .Select(e => e.VenueId)
+                .FirstOrDefaultAsync();
 
-            var stands = await _context.Stands.Where(e => e.VenueId == venues[0]).ToListAsync();
+            if (venueId == 0)
+            {
+                throw new Exception($"Venue not found for ShowId: {showEvent.ShowId}");
+            }
 
-            foreach (var val in stands){
-            var standSeats = await _context.StandSeats.Where(e => e.StandId == val.StandId).ToListAsync();
+            // Fetch all stands and their seats in a single query
+            var standSeats = await _context.Stands
+                .Where(e => e.VenueId == venueId)
+                .SelectMany(stand => _context.StandSeats.Where(seat => seat.StandId == stand.StandId))
+                .ToListAsync();
+
+            if (!standSeats.Any())
+            {
+                throw new Exception($"No stands or stand seats found for VenueId: {venueId}");
+            }
+
+            // Map StandSeats to ShowSeats
             var showSeats = standSeats.Select(seat => new ShowSeat
             {
                 ShowId = showEvent.ShowId,
                 StandSeatId = seat.StandSeatId,
                 IsBooked = false
-            });
+            }).ToList();
 
-            _context.ShowSeats.AddRange(showSeats);
+            // Add all ShowSeats in bulk
+            await _context.ShowSeats.AddRangeAsync(showSeats);
+
+            // Save changes once
             await _context.SaveChangesAsync();
-            }
         }
+
     }
 }

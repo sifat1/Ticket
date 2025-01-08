@@ -14,7 +14,7 @@ namespace App.Services
 
         public void PublishAsync(ShowAddedEvent showEvent)
         {
-            BackgroundJob.Enqueue<ShowAddedHandler>(handler => handler.HandleAsync(showEvent));
+            BackgroundJob.Enqueue<ShowAddedHandler>(handler => handler.HandleShowAsync(showEvent));
         }
     }
 }

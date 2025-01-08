@@ -149,6 +149,25 @@ namespace App.Services
             var event_ = new StandAddedEvent { StandId = stand.StandId, SeatCount = stand.SeatCount };
             _eventPublisher.PublishAsync(event_);
         }
+
+        public async Task AddShowAsync(CreateShow show)
+        {
+            if (show == null)
+            {
+                throw new ArgumentNullException(nameof(show));
+            }
+
+            var _show = new Show();
+            _show.Name = show.Name;
+            _show.VenueId = show.VenueId;
+            _show.Date = show.Date;
+
+            await _context.Shows.AddAsync(_show);
+            await _context.SaveChangesAsync();
+
+            var _event = new ShowAddedEvent { ShowId = _show.ShowId};
+            _eventPublisher.PublishAsync(_event);
+        }
         
     }
 }
