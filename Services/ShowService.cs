@@ -1,3 +1,4 @@
+using System.Net.WebSockets;
 using DB.DBcontext;
 using Dtos;
 using Microsoft.EntityFrameworkCore;
@@ -192,11 +193,25 @@ namespace App.Services
             _show.VenueId = show.VenueId;
             _show.Date = show.Date;
 
-            await _context.Shows.AddAsync(_show);
-            await _context.SaveChangesAsync();
+            _context.Shows.AddAsync(_show);
+            _context.SaveChangesAsync();
 
             var _event = new ShowAddedEvent { ShowId = _show.ShowId };
-            _eventPublisher.PublishAsync(_event);
+            await _eventPublisher.PublishAsync(_event);
+        }
+
+        public async void AddVenue(CreateVenue venue)
+        {
+            if (venue == null)
+            {
+                throw new ArgumentNullException(nameof(venue));
+            }
+
+            var newvenue = new Venue();
+            newvenue.Name = venue.Name;
+            newvenue.Location = venue.Location;
+            _context.Venues.Add(newvenue);
+            _context.SaveChanges();
         }
 
     }

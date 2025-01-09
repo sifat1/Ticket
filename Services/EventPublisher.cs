@@ -12,7 +12,7 @@ namespace App.Services
             BackgroundJob.Enqueue<StandAddedHandler>(handler => handler.HandleAsync(standEvent));
         }
 
-        public void PublishAsync(ShowAddedEvent showEvent)
+        public async Task PublishAsync(ShowAddedEvent showEvent)
         {
             BackgroundJob.Enqueue<ShowAddedHandler>(handler => handler.HandleShowAsync(showEvent));
         }

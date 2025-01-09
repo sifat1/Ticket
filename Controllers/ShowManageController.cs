@@ -29,5 +29,10 @@ namespace App.Controllers
             await _showService.AddStandAsync(stand);
         }
 
+        [HttpPost("add-venue")]
+        public void AddNewVenue(CreateVenue createVenue)
+        {
+            _showService.AddVenue(createVenue);
+        }
     }
 }
