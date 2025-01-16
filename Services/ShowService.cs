@@ -1,3 +1,4 @@
+using System.Net.WebSockets;
 using DB.DBcontext;
 using Dtos;
 using Microsoft.EntityFrameworkCore;
@@ -10,11 +11,13 @@ namespace App.Services
     {
         private readonly ShowDbContext _context;
         private readonly EventPublisher _eventPublisher;
+        private readonly ILogger<ShowService> _logger;
 
-        public ShowService(ShowDbContext context, EventPublisher eventPublisher)
+        public ShowService(ShowDbContext context, EventPublisher eventPublisher, ILogger<ShowService> logger)
         {
             _context = context;
             _eventPublisher = eventPublisher;
+            _logger = logger;
         }
 
         public async Task<string> BookTicketAsync(BookingRequest request)
@@ -141,15 +144,61 @@ namespace App.Services
                 .Include(ss => ss.StandSeat)
                 .ToListAsync();
         }
-        public async Task AddStandAsync(Stand stand)
+        public async Task AddStandAsync(CreateStand stand)
         {
-            _context.Stands.Add(stand);
-            await _context.SaveChangesAsync();
+            if (stand == null)
+            {
+                throw new ArgumentNullException(nameof(stand));
+            }
 
-            var event_ = new StandAddedEvent { StandId = stand.StandId, SeatCount = stand.SeatCount };
-            _eventPublisher.PublishAsync(event_);
+            // Explicit property mapping
+            var _stand = new Stand
+            {
+                VenueId = stand.VenueId,
+                SeatCount = (int)(stand?.capacity), // Null check before accessing capacity
+                Name = stand?.Name // Null check before accessing name
+            };
+
+            _context.Stands.Add(_stand);
+            _context.SaveChanges();
+
+            // Event publishing with basic error handling
+            var event_ = new StandAddedEvent
+            {
+                StandId = _stand.StandId,
+                SeatCount = _stand.SeatCount
+            };
+
+            try
+            {
+                await _eventPublisher.PublishAsync(event_);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error publishing StandAddedEvent: {ex.Message}");
+                // Decide on further actions based on the exception (e.g., retry)
+            }
         }
 
-        
+
+        public async Task AddShowTask(CreateShow show)
+        {
+            if (show == null)
+            {
+                throw new ArgumentNullException(nameof(show));
+            }
+
+            var _show = new Show();
+            _show.Name = show.Name;
+            _show.VenueId = show.VenueId;
+            _show.Date = show.Date;
+
+            _context.Shows.Add(_show);
+            _context.SaveChanges();
+
+            var _event = new ShowAddedEvent { ShowId = _show.ShowId };
+            await _eventPublisher.PublishAsync(_event);
+        }
+
     }
 }

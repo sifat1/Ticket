@@ -1,4 +1,5 @@
 using DB.DBcontext;
+using Dtos;
 using Microsoft.EntityFrameworkCore;
 using ShowTickets.Ticketmodels;
 
@@ -18,10 +19,18 @@ namespace App.Services
             return await _context.Venues.Include(v => v.Stands).ToListAsync();
         }
 
-        public async Task AddVenueAsync(Venue venue)
+        public async void AddVenue(CreateVenue venue)
         {
-            _context.Venues.Add(venue);
-            await _context.SaveChangesAsync();
+            if (venue == null)
+            {
+                throw new ArgumentNullException(nameof(venue));
+            }
+
+            var newvenue = new Venue();
+            newvenue.Name = venue.Name;
+            newvenue.Location = venue.Location;
+            _context.Venues.Add(newvenue);
+            _context.SaveChanges();
         }
     }
 }

@@ -1,0 +1,8 @@
+namespace ShowTickets.Ticketmodels.User
+{
+    public class Role
+    {
+        public int RoleId { get; set; }
+        public string RoleName { get; set; }
+    }
+}
