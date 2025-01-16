@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ticket.Migrations
 {
     [DbContext(typeof(ShowDbContext))]
-    [Migration("20250105045043_InitialMigration")]
-    partial class InitialMigration
+    [Migration("20250116112522_updatedbmodel")]
+    partial class updatedbmodel
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -11,10 +11,12 @@ namespace App.Controllers
     public class ShowManageController : ControllerBase
     {
         private readonly ShowService _showService;
+        private readonly VenueService _venueService;
 
-        public ShowManageController(ShowService showService)
+        public ShowManageController(ShowService showService, VenueService venueService)
         {
             _showService = showService;
+            _venueService = venueService;
         }
 
         [HttpPost("add-show")]
@@ -32,7 +34,9 @@ namespace App.Controllers
         [HttpPost("add-venue")]
         public void AddNewVenue(CreateVenue createVenue)
         {
-            _showService.AddVenue(createVenue);
+            _venueService.AddVenue(createVenue);
         }
+
+        
     }
 }

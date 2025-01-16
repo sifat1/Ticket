@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using ShowTickets.Ticketmodels;
 
-namespace DB.DBcontext{
-using Microsoft.EntityFrameworkCore;
+namespace DB.DBcontext
+{
 
     public class ShowDbContext : DbContext
     {
@@ -39,6 +39,22 @@ using Microsoft.EntityFrameworkCore;
                 .HasOne(ss => ss.StandSeat)
                 .WithMany()
                 .HasForeignKey(ss => ss.StandSeatId);
+
+            /*
+            CREATE EXTENSION IF NOT EXISTS pgcrypto;
+            ALTER TABLE "ShowSeats"
+            ALTER COLUMN "RowVersion" SET DEFAULT gen_random_bytes(8);
+
+            */
+            modelBuilder.Entity<ShowSeat>(entity =>
+            {
+                entity.Property(e => e.RowVersion)
+                    .IsRequired()
+                    .IsConcurrencyToken()
+                    .ValueGeneratedOnAddOrUpdate()
+                    .HasColumnType("bytea");
+            });
+
         }
     }
 

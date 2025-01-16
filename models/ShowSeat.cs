@@ -14,8 +14,6 @@ namespace ShowTickets.Ticketmodels
 
         public long StandSeatId { get; set; }
         public StandSeat StandSeat { get; set; }
-
-        [Timestamp]
         public byte[] RowVersion { get; set; }
     }
 

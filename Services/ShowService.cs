@@ -193,25 +193,11 @@ namespace App.Services
             _show.VenueId = show.VenueId;
             _show.Date = show.Date;
 
-            _context.Shows.AddAsync(_show);
-            _context.SaveChangesAsync();
+            _context.Shows.Add(_show);
+            _context.SaveChanges();
 
             var _event = new ShowAddedEvent { ShowId = _show.ShowId };
             await _eventPublisher.PublishAsync(_event);
-        }
-
-        public async void AddVenue(CreateVenue venue)
-        {
-            if (venue == null)
-            {
-                throw new ArgumentNullException(nameof(venue));
-            }
-
-            var newvenue = new Venue();
-            newvenue.Name = venue.Name;
-            newvenue.Location = venue.Location;
-            _context.Venues.Add(newvenue);
-            _context.SaveChanges();
         }
 
     }

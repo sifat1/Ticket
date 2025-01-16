@@ -24,12 +24,14 @@ namespace App.Controllers
             var venues = await _venueService.GetAllVenuesAsync();
             return Ok(venues);
         }
-
+/*
         [HttpPost]
         public async Task<IActionResult> AddVenue([FromBody] Venue venue)
         {
             await _venueService.AddVenueAsync(venue);
             return Ok();
         }
+        */
     }
+    
 }
