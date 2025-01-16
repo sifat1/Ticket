@@ -1,10 +1,20 @@
-namespace ShowTickets.Ticketmodels{
+using System.ComponentModel.DataAnnotations;
+
+namespace ShowTickets.Ticketmodels.User{
     public class User
     {
         public long UserId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string PhoneNumber { get; set; } = string.Empty;
+
+        [Required]
+        public string Name { get; set; }
+        [Required]
+        public string Email { get; set; }
+        [Required]
+        public string PhoneNumber { get; set; }
+        [Required]
+        public string Password { get; set; }
+        public List<Role>? Roles { get; set; }
+
     }
 
 }
