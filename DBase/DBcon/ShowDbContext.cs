@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ShowTickets.Ticketmodels;
+using ShowTickets.Ticketmodels.User;
 
 namespace DB.DBcontext
 {
@@ -12,7 +13,9 @@ namespace DB.DBcontext
         public DbSet<Show> Shows { get; set; }
         public DbSet<ShowSeat> ShowSeats { get; set; }
 
-        public DbSet<User> Users { get; set; }
+        public DbSet<Users> Users { get; set; }
+        public DbSet<Role> roles { get; set; }
+        public DbSet<TicketSellingWindow> ticketSellingWindows{ get; set; }
 
         public ShowDbContext(DbContextOptions<ShowDbContext> options) : base(options) { }
 
@@ -54,6 +57,11 @@ namespace DB.DBcontext
                     .ValueGeneratedOnAddOrUpdate()
                     .HasColumnType("bytea");
             });
+
+            modelBuilder.Entity<TicketSellingWindow>()
+            .HasOne(ss => ss.show)
+            .WithOne(tw => tw.ticketSellingWindow)
+            .HasForeignKey<Show>(ss => ss.ShowId);
 
         }
     }

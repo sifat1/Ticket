@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using ShowTickets.Ticketmodels;
 
 namespace ShowTickets.Ticketmodels
@@ -6,7 +7,7 @@ namespace ShowTickets.Ticketmodels
     {
         public long TicketSellingWindowID { get; set; }
         public long ShowId { get; set; }
-        public Show show { get; set; }
+        public required Show show { get; set; }
 
         public DateTime startdate { get; set; }
 

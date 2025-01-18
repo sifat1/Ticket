@@ -1,8 +1,10 @@
 using App.Services;
+using App.Services.Manager;
 using DB.DBcontext;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Ticket.EventHandler;
+using User.Registration;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +23,8 @@ builder.Services.AddDbContext<ShowDbContext>(options =>
 builder.Services.AddScoped<ShowService>();
 builder.Services.AddScoped<VenueService>();
 builder.Services.AddScoped<StandService>();
+builder.Services.AddScoped<ShowManagerService>();
+builder.Services.AddScoped<UserRegistrationService>();
 builder.Services.AddScoped<EventPublisher>();
 builder.Services.AddScoped<ShowAddedHandler>();
 builder.Services.AddScoped<StandAddedHandler>();
