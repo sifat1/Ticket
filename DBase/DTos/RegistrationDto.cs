@@ -7,7 +7,7 @@ namespace Dtos
     {
         [Required]
         [StringLength(20)]
-        [RegularExpression(@"[^\s]$")]
+        //[RegularExpression(@"^[^\s]$")]
         public string Name { get; set; }
         [Required]
         [StringLength(30)]

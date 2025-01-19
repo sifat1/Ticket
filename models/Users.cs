@@ -4,6 +4,7 @@ namespace ShowTickets.Ticketmodels.User
 {
     public class Users
     {
+        [Key]
         public long UserId { get; set; }
 
         [Required]
