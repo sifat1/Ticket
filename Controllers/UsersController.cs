@@ -17,15 +17,30 @@ namespace App.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateUser(RegistrationDTO registrationDTO)
         {
-            try{
+            try
+            {
                 await _userManager.Createuser(registrationDTO);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
 
             return Ok("User Created successfully");
+        }
+        
+        [HttpGet]
+        public async Task<IActionResult> Login(LoginDto loginDto)
+        {
+            try
+            {
+                await _userManager.Login(loginDto);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            return Ok("Login Successfull");
         }
     }
 }

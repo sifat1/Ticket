@@ -50,5 +50,26 @@ namespace User.Registration
             // Return success response
             return new OkObjectResult(new { Message = "User registered successfully." });
         }
+
+        public async Task<IActionResult> Login(LoginDto loginDto)
+        {
+            if (loginDto == null)
+            {
+                return new BadRequestObjectResult("Login data insufficient");
+            }
+
+            var _user = _context.Users.Where(e=> e.Email == loginDto.Email).FirstOrDefault();
+
+            if (_user == null)
+            {
+                return new NotFoundObjectResult("User Not Found");
+            }
+            // Verify the password
+            if (!PasswordHasher.VerifyPasswordHash(loginDto.Password, _user.PasswordHash, _user.PasswordSalt))
+                return new UnauthorizedObjectResult(new { message = "Invalid email or password."});
+
+
+            return new OkObjectResult(new {message = "Loggedin successfully"});
+        }
     }
 }
