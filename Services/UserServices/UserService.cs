@@ -1,44 +1,54 @@
-
 using DB.DBcontext;
 using Dtos;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ShowTickets.Ticketmodels.User;
+using User.Password;
 
 namespace User.Registration
 {
     public class UserRegistrationService
     {
         private readonly ShowDbContext _context;
+
         public UserRegistrationService(ShowDbContext dbContext)
         {
             _context = dbContext;
         }
 
-        public string Createuser(RegistrationDTO registrationDTO)
+        public async Task<IActionResult> Createuser(RegistrationDTO registrationDTO)
         {
             if (registrationDTO == null)
             {
-                throw new ArgumentNullException(nameof(registrationDTO));
+                return new BadRequestObjectResult("Registration data is required.");
             }
 
-            var user = _context.Users.Where(e => e.Email == registrationDTO.Email).FirstOrDefault();
-
-            if (user != null)
+            // Check if email already exists
+            bool emailExists = await _context.Users.AnyAsync(e => e.Email == registrationDTO.Email);
+            if (emailExists)
             {
-                return "user already exists";
+                return new ConflictObjectResult("Email is already in use.");
             }
 
-            var newuser = new Users();
-            newuser.Email = registrationDTO.Email;
-            newuser.Name = registrationDTO.Name;
-            newuser.PhoneNumber = registrationDTO.Phone;
+            // Create new user object
+            var newuser = new Users
+            {
+                Name = registrationDTO.Name,
+                Email = registrationDTO.Email,
+                PhoneNumber = registrationDTO.Phone
+            };
 
+            // Hash the password
+            PasswordHasher.CreatePasswordHash(registrationDTO.Password, out byte[] passwordHash, out byte[] passwordSalt);
+            newuser.PasswordHash = passwordHash;
+            newuser.PasswordSalt = passwordSalt;
+
+            // Save to database
             _context.Add(newuser);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
-            return "";
-
-
+            // Return success response
+            return new OkObjectResult(new { Message = "User registered successfully." });
         }
     }
 }
