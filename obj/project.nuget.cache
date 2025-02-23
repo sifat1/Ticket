@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "VNoEdP0vp3sAYcg/H6gfjybRE8ClgBzmByCh18Cpg4oi3oWpIrsoG+g0Ynfvh1dQ7mFlf9NP3fwPYTytiSjTDg==",
+  "dgSpecHash": "MduNH7kxhWmSCmlz8+FpaONWzrg57ntNmYzXynq09Czz3NeO0czLxPg8lkIs7XEYT1c+rRwismd5oR2CdbHStg==",
   "success": true,
   "projectFilePath": "/home/sifat/Documents/c#dev/Ticket/Ticket.csproj",
   "expectedPackageFiles": [
     "/home/sifat/.nuget/packages/azure.core/1.38.0/azure.core.1.38.0.nupkg.sha512",
     "/home/sifat/.nuget/packages/azure.identity/1.11.4/azure.identity.1.11.4.nupkg.sha512",
+    "/home/sifat/.nuget/packages/bcrypt.net-next/4.0.3/bcrypt.net-next.4.0.3.nupkg.sha512",
     "/home/sifat/.nuget/packages/dapper/2.0.123/dapper.2.0.123.nupkg.sha512",
     "/home/sifat/.nuget/packages/hangfire/1.8.17/hangfire.1.8.17.nupkg.sha512",
     "/home/sifat/.nuget/packages/hangfire.aspnetcore/1.8.17/hangfire.aspnetcore.1.8.17.nupkg.sha512",

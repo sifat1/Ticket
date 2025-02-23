@@ -144,7 +144,16 @@ namespace App.Services
                 .Include(ss => ss.StandSeat)
                 .ToListAsync();
         }
-       
+
+        public async Task<List<Show>> GetTicketOpeningAsync()
+        {
+            var shows = await _context.Shows
+                .Where(ss => _context.ticketSellingWindows
+                    .Any(p => p.ShowId == ss.ShowId && p.enddate > DateTime.Now && p.startdate < DateTime.Now))
+                .ToListAsync();
+
+            return shows;
+        }
 
     }
 }

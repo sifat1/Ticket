@@ -17,7 +17,7 @@ namespace ShowTickets.Ticketmodels.User
         public byte[] PasswordHash { get; set; }
         [Required]
         public byte[] PasswordSalt { get; set; }
-        public List<Role>? Roles { get; set; }
+        public ICollection<UserRole> UserRoles { get; set; } // Navigation property for many-to-many relationship with Role
 
     }
 

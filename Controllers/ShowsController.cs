@@ -32,13 +32,6 @@ namespace App.Controllers
             return Ok(seats);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddShow([FromBody] Show show)
-        {
-            await _showService.AddShowAsync(show);
-            return Ok();
-        }
-
         [HttpPost("book")]
         public async Task<IActionResult> BookTicket([FromBody] BookingRequest request)
         {
@@ -58,6 +51,19 @@ namespace App.Controllers
         {
             var result = await _showService.BookTicketWithOptimisticConcurrencyAsync(request);
             return Ok(new { Message = result });
+        }
+
+        [HttpGet("get-Shows-with-sellingdate")]
+        public async Task<IActionResult> GetShowsOpening()
+        {
+            try
+            {
+            return Ok (await _showService.GetTicketOpeningAsync());
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

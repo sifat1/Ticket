@@ -33,6 +33,13 @@ namespace App.Services.Manager
             _context.Shows.Add(_show);
             _context.SaveChanges();
 
+            var _datewindow = new TicketSellingWindow();
+            _datewindow.startdate = show.startwindow;
+            _datewindow.enddate = show.endwindow;
+            _datewindow.show = _show;
+            _context.ticketSellingWindows.Add(_datewindow);
+            _context.SaveChanges();
+
             var _event = new ShowAddedEvent { ShowId = _show.ShowId };
             await _eventPublisher.PublishAsync(_event);
         }
