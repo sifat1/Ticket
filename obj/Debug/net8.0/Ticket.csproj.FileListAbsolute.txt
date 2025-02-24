@@ -190,3 +190,5 @@
 /home/sifat/Documents/c#dev/Ticket/bin/Debug/net8.0/tr-TR/Hangfire.Core.resources.dll
 /home/sifat/Documents/c#dev/Ticket/bin/Debug/net8.0/zh-TW/Hangfire.Core.resources.dll
 /home/sifat/Documents/c#dev/Ticket/bin/Debug/net8.0/zh/Hangfire.Core.resources.dll
+/home/sifat/Documents/c#dev/Ticket/bin/Debug/net8.0/BCrypt.Net-Next.dll
+/home/sifat/Documents/c#dev/Ticket/bin/Debug/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll

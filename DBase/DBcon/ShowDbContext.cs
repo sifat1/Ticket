@@ -1,3 +1,4 @@
+using JWTAuthServer.Models;
 using Microsoft.EntityFrameworkCore;
 using ShowTickets.Ticketmodels;
 using ShowTickets.Ticketmodels.User;
@@ -15,10 +16,7 @@ namespace DB.DBcontext
 
         public DbSet<Users> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
-        // DbSet representing the UserRoles join table.
-        public DbSet<UserRole> UserRoles { get; set; }
-        // DbSet representing the SigningKeys table.
-        public DbSet<SigningKey> SigningKeys { get; set; }
+        public DbSet<RefreshToken> RefreshToken { get; set; }
         public DbSet<TicketSellingWindow> ticketSellingWindows { get; set; }
 
         public ShowDbContext(DbContextOptions<ShowDbContext> options) : base(options) { }
