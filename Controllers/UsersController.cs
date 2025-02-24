@@ -1,5 +1,11 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using DB.DBcontext;
 using Dtos;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using ShowTickets.Ticketmodels.User;
 using User.Registration;
 
 namespace App.Controllers
@@ -9,9 +15,13 @@ namespace App.Controllers
     public class UsersController : ControllerBase
     {
         private readonly UserRegistrationService _userManager;
-        public UsersController(UserRegistrationService userRegistrationService)
+        private readonly IConfiguration _configuration;
+        private readonly ShowDbContext _context;
+        public UsersController(IConfiguration configuration, UserRegistrationService userRegistrationService,ShowDbContext context)
         {
             _userManager = userRegistrationService;
+            _configuration = configuration;
+            _context = context;
         }
 
         [HttpPost]
@@ -42,5 +52,6 @@ namespace App.Controllers
             }
             return Ok("Login Successfull");
         }
+
     }
 }

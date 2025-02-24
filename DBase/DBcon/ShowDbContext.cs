@@ -14,8 +14,12 @@ namespace DB.DBcontext
         public DbSet<ShowSeat> ShowSeats { get; set; }
 
         public DbSet<Users> Users { get; set; }
-        public DbSet<Role> roles { get; set; }
-        public DbSet<TicketSellingWindow> ticketSellingWindows{ get; set; }
+        public DbSet<Role> Roles { get; set; }
+        // DbSet representing the UserRoles join table.
+        public DbSet<UserRole> UserRoles { get; set; }
+        // DbSet representing the SigningKeys table.
+        public DbSet<SigningKey> SigningKeys { get; set; }
+        public DbSet<TicketSellingWindow> ticketSellingWindows { get; set; }
 
         public ShowDbContext(DbContextOptions<ShowDbContext> options) : base(options) { }
 
@@ -62,6 +66,13 @@ namespace DB.DBcontext
             .HasOne(ss => ss.show)
             .WithOne(tw => tw.ticketSellingWindow)
             .HasForeignKey<Show>(ss => ss.ShowId);
+
+            // Seed initial data for Roles, Users, Clients, and UserRoles.
+            modelBuilder.Entity<Role>().HasData(
+                new Role { Id = 1, Name = "Admin", Description = "Admin Role" },
+                new Role { Id = 2, Name = "Editor", Description = " Editor Role" },
+                new Role { Id = 3, Name = "User", Description = "User Role" }
+            );
 
         }
     }
