@@ -2,6 +2,7 @@
 
 using App.Services;
 using Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShowTickets.Ticketmodels;
 
@@ -32,6 +33,7 @@ namespace App.Controllers
             return Ok(seats);
         }
 
+        [Authorize(Roles = "User")]
         [HttpPost("book")]
         public async Task<IActionResult> BookTicket([FromBody] BookingRequest request)
         {

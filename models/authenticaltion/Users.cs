@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using JWTAuthServer.Models;
 
 namespace ShowTickets.Ticketmodels.User
 {
@@ -17,7 +18,9 @@ namespace ShowTickets.Ticketmodels.User
         public byte[] PasswordHash { get; set; }
         [Required]
         public byte[] PasswordSalt { get; set; }
-        public ICollection<UserRole> UserRoles { get; set; } // Navigation property for many-to-many relationship with Role
+        
+        public string Role { get; set; } = "User";  // Default role is "User"
+        public List<RefreshToken> RefreshTokens { get; set; } = new();
 
     }
 

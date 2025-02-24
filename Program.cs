@@ -1,8 +1,12 @@
+using System.Text;
 using App.Services;
 using App.Services.Manager;
 using DB.DBcontext;
 using Hangfire;
+using JWTAuthServer.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Ticket.EventHandler;
 using User.Registration;
 
@@ -28,6 +32,7 @@ builder.Services.AddScoped<UserRegistrationService>();
 builder.Services.AddScoped<EventPublisher>();
 builder.Services.AddScoped<ShowAddedHandler>();
 builder.Services.AddScoped<StandAddedHandler>();
+builder.Services.AddScoped<TokenService>();
 
 builder.Services.AddHangfireConfig(builder.Configuration);
 
@@ -51,8 +56,29 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]))
+        };
+    });
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
+});
+
+app.UseAuthorization();
+app.UseAuthentication(); // Enable authentication middleware
 app.MapControllers();
 
 app.Run();

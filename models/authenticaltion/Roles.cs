@@ -13,7 +13,6 @@ namespace ShowTickets.Ticketmodels.User
         public string Name { get; set; }
         //Role Description
         public string? Description { get; set; }
-        // Navigation property for the relationship with UserRole.
-        public ICollection<UserRole> UserRoles { get; set; }
+        
     }
 }
