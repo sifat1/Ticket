@@ -1,13 +1,15 @@
+using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
-using System.Security.Cryptography;
+using System.Threading.Tasks;
 using DB.DBcontext;
 using Dtos;
 using JWTAuthServer.DTOs;
 using JWTAuthServer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
 using ShowTickets.Ticketmodels.User;
 using User.Password;
 
@@ -54,7 +56,7 @@ namespace User.Registration
             newuser.PasswordSalt = passwordSalt;
 
             // Save to database
-            _context.Add(newuser);
+            _context.Users.Add(newuser);
             await _context.SaveChangesAsync();
 
             // Return success response
@@ -65,18 +67,21 @@ namespace User.Registration
         {
             if (loginDto == null)
             {
-                return new BadRequestObjectResult("Login data insufficient");
+                return new BadRequestObjectResult("Login data insufficient.");
             }
 
-            var _user = _context.Users.Where(e => e.Email == loginDto.Email).FirstOrDefault();
+            var _user = await _context.Users.FirstOrDefaultAsync(e => e.Email == loginDto.Email);
 
             if (_user == null)
             {
-                return new NotFoundObjectResult("User Not Found");
+                return new NotFoundObjectResult("User Not Found.");
             }
+
             // Verify the password
             if (!PasswordHasher.VerifyPasswordHash(loginDto.Password, _user.PasswordHash, _user.PasswordSalt))
+            {
                 return new UnauthorizedObjectResult(new { message = "Invalid email or password." });
+            }
 
             var accessToken = _tokenService.GenerateAccessToken(_user);
             var refreshToken = _tokenService.GenerateRefreshToken();
@@ -87,24 +92,53 @@ namespace User.Registration
             return new OkObjectResult(new { AccessToken = accessToken, RefreshToken = refreshToken.Token, Role = _user.Role });
         }
 
-        [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh([FromBody] RefreshDTO model)
+        public async Task<IActionResult> Logout(RefreshDTO refreshDto)
         {
+            if (refreshDto == null || string.IsNullOrEmpty(refreshDto.RefreshToken))
+            {
+                return new BadRequestObjectResult("Refresh token is required.");
+            }
+
+            var refreshToken = await _context.RefreshToken
+                .FirstOrDefaultAsync(rt => rt.Token == refreshDto.RefreshToken);
+
+            if (refreshToken == null)
+            {
+                return new BadRequestObjectResult("Invalid refresh token.");
+            }
+
+            _context.RefreshToken.Remove(refreshToken); // Remove the refresh token from DB
+            await _context.SaveChangesAsync();
+
+            return new OkObjectResult(new { message = "Logged out successfully." });
+        }
+
+        public async Task<IActionResult> Refresh(RefreshDTO model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.RefreshToken))
+            {
+                return new BadRequestObjectResult("Refresh token is required.");
+            }
+
             var user = await _context.Users
                 .Include(u => u.RefreshTokens)
                 .FirstOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == model.RefreshToken));
 
             if (user == null)
-                return new UnauthorizedObjectResult("Invalid refresh token");
+            {
+                return new UnauthorizedObjectResult("Invalid refresh token.");
+            }
 
             var oldToken = user.RefreshTokens.First(t => t.Token == model.RefreshToken);
             if (oldToken.IsRevoked || oldToken.Expires < DateTime.UtcNow)
-                return new UnauthorizedObjectResult("Token expired or revoked");
+            {
+                return new UnauthorizedObjectResult("Token expired or revoked.");
+            }
 
             var newAccessToken = _tokenService.GenerateAccessToken(user);
             var newRefreshToken = _tokenService.GenerateRefreshToken();
 
-            oldToken.IsRevoked = true;
+            oldToken.IsRevoked = true; // Mark old refresh token as revoked
             user.RefreshTokens.Add(newRefreshToken);
 
             await _context.SaveChangesAsync();

@@ -1,11 +1,7 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
 using DB.DBcontext;
 using Dtos;
+using JWTAuthServer.DTOs;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using ShowTickets.Ticketmodels.User;
 using User.Registration;
 
 namespace App.Controllers
@@ -24,7 +20,7 @@ namespace App.Controllers
             _context = context;
         }
 
-        [HttpPost]
+        [HttpPost("registration")]
         public async Task<IActionResult> CreateUser(RegistrationDTO registrationDTO)
         {
             try
@@ -39,7 +35,7 @@ namespace App.Controllers
             return Ok("User Created successfully");
         }
         
-        [HttpGet]
+        [HttpGet("login")]
         public async Task<IActionResult> Login(LoginDto loginDto)
         {
             try
@@ -51,6 +47,26 @@ namespace App.Controllers
                 return BadRequest(ex.Message);
             }
             return Ok("Login Successfull");
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh(RefreshDTO model)
+        {
+            await _userManager.Refresh(model);
+            return Ok("");
+        }
+
+        [HttpDelete("Logout")]
+        public async Task<IActionResult> Logout(RefreshDTO refreshDto)
+        {
+            try{
+                await _userManager.Logout(refreshDto);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            return Ok("Login");
         }
 
     }
