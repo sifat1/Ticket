@@ -35,7 +35,7 @@ namespace App.Controllers
             return Ok("User Created successfully");
         }
         
-        [HttpGet("login")]
+        [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto loginDto)
         {
             try

@@ -8,17 +8,17 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Ticket.EventHandler;
+using Hangfire.AspNetCore;
+using Hangfire;
 using User.Registration;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddDbContext<ShowDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
         .EnableDetailedErrors()
@@ -36,26 +36,7 @@ builder.Services.AddScoped<TokenService>();
 
 builder.Services.AddHangfireConfig(builder.Configuration);
 
-var app = builder.Build();
-
-app.UseHangfireDashboard();
-app.MapHangfireDashboard();
-
-builder.Services.AddLogging(logging =>
-{
-    logging.AddConsole();
-    logging.AddDebug();
-});
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
+//  Move authentication **before** builder.Build()
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -77,8 +58,29 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
 });
 
-app.UseAuthorization();
-app.UseAuthentication(); // Enable authentication middleware
-app.MapControllers();
+//  Now build the app
+var app = builder.Build();
 
+app.UseHangfireDashboard();
+app.MapHangfireDashboard();
+
+builder.Services.AddLogging(logging =>
+{
+    logging.AddConsole();
+    logging.AddDebug();
+});
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication(); //  Authentication middleware must come **before** authorization
+app.UseAuthorization();
+
+app.MapControllers();
 app.Run();
