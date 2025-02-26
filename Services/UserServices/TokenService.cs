@@ -40,13 +40,14 @@ public class TokenService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public RefreshToken GenerateRefreshToken()
+    public RefreshToken GenerateRefreshToken(Users user)
     {
         return new RefreshToken
         {
             Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
             Expires = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:RefreshTokenExpiration"])),
-            IsRevoked = false
+            IsRevoked = false,
+            UserId = user.UserId
         };
     }
 }

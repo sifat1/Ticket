@@ -16,7 +16,7 @@ namespace DB.DBcontext
 
         public DbSet<Users> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
-        public DbSet<RefreshToken> RefreshToken { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<TicketSellingWindow> ticketSellingWindows { get; set; }
 
         public ShowDbContext(DbContextOptions<ShowDbContext> options) : base(options) { }
@@ -24,6 +24,13 @@ namespace DB.DBcontext
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Users>()
+                .HasMany(u => u.RefreshTokens)
+                .WithOne(rt => rt.User)
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade); // Ensures tokens are deleted if user is removed
+
 
             modelBuilder.Entity<Venue>()
                 .HasMany(v => v.Stands)

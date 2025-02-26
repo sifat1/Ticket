@@ -1,15 +1,9 @@
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
 using DB.DBcontext;
 using Dtos;
 using JWTAuthServer.DTOs;
 using JWTAuthServer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using ShowTickets.Ticketmodels.User;
 using User.Password;
 
@@ -83,8 +77,17 @@ namespace User.Registration
                 return new AuthResponse { Success = false, Message = "Invalid email or password." };
             }
 
+            var list_of_tokens = _context.RefreshTokens.Where(rt => rt.UserId == _user.UserId).ToList();
+
+            // ✅ Delete ALL existing refresh tokens for this user
+            if (list_of_tokens.Any())
+            {
+                _context.RefreshTokens.RemoveRange(list_of_tokens);
+                await _context.SaveChangesAsync();  // Commit deletion
+            }
+
             var accessToken = _tokenService.GenerateAccessToken(_user);
-            var refreshToken = _tokenService.GenerateRefreshToken();
+            var refreshToken = _tokenService.GenerateRefreshToken(_user);
 
             _user.RefreshTokens.Add(refreshToken);
             await _context.SaveChangesAsync();
@@ -105,7 +108,7 @@ namespace User.Registration
                 return new BadRequestObjectResult("Refresh token is required.");
             }
 
-            var refreshToken = await _context.RefreshToken
+            var refreshToken = await _context.RefreshTokens
                 .FirstOrDefaultAsync(rt => rt.Token == refreshDto.RefreshToken);
 
             if (refreshToken == null)
@@ -113,7 +116,7 @@ namespace User.Registration
                 return new BadRequestObjectResult("Invalid refresh token.");
             }
 
-            _context.RefreshToken.Remove(refreshToken); // Remove the refresh token from DB
+            _context.RefreshTokens.Remove(refreshToken); // Remove the refresh token from DB
             await _context.SaveChangesAsync();
 
             return new OkObjectResult(new { message = "Logged out successfully." });
@@ -142,7 +145,7 @@ namespace User.Registration
             }
 
             var newAccessToken = _tokenService.GenerateAccessToken(user);
-            var newRefreshToken = _tokenService.GenerateRefreshToken();
+            var newRefreshToken = _tokenService.GenerateRefreshToken(user);
 
             oldToken.IsRevoked = true; // Mark old refresh token as revoked
             user.RefreshTokens.Add(newRefreshToken);

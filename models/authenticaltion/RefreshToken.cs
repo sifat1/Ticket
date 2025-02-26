@@ -11,6 +11,6 @@ public class RefreshToken
     public bool IsRevoked { get; set; }
 
     // Foreign key to the user
-    public int UserId { get; set; }
+    public long UserId { get; set; }
     public Users User { get; set; }
 }
