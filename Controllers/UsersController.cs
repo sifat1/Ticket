@@ -13,7 +13,7 @@ namespace App.Controllers
         private readonly UserRegistrationService _userManager;
         private readonly IConfiguration _configuration;
         private readonly ShowDbContext _context;
-        public UsersController(IConfiguration configuration, UserRegistrationService userRegistrationService,ShowDbContext context)
+        public UsersController(IConfiguration configuration, UserRegistrationService userRegistrationService, ShowDbContext context)
         {
             _userManager = userRegistrationService;
             _configuration = configuration;
@@ -34,19 +34,23 @@ namespace App.Controllers
 
             return Ok("User Created successfully");
         }
-        
+
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto loginDto)
         {
-            try
+            if (loginDto == null)
             {
-                await _userManager.Login(loginDto);
+                return BadRequest("Login data insufficient.");
             }
-            catch (Exception ex)
+
+            var result = await _userManager.Login(loginDto);
+
+            if (!result.Success)
             {
-                return BadRequest(ex.Message);
+                return Unauthorized(new { message = result.Message });
             }
-            return Ok("Login Successfull");
+
+            return Ok(result);
         }
 
         [HttpPost("refresh")]
@@ -59,7 +63,8 @@ namespace App.Controllers
         [HttpDelete("Logout")]
         public async Task<IActionResult> Logout(RefreshDTO refreshDto)
         {
-            try{
+            try
+            {
                 await _userManager.Logout(refreshDto);
             }
             catch (Exception ex)

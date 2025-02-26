@@ -63,24 +63,24 @@ namespace User.Registration
             return new OkObjectResult(new { Message = "User registered successfully." });
         }
 
-        public async Task<IActionResult> Login(LoginDto loginDto)
+        public async Task<AuthResponse> Login(LoginDto loginDto)
         {
             if (loginDto == null)
             {
-                return new BadRequestObjectResult("Login data insufficient.");
+                return new AuthResponse { Success = false, Message = "Login password is empty" };
             }
 
             var _user = await _context.Users.FirstOrDefaultAsync(e => e.Email == loginDto.Email);
 
             if (_user == null)
             {
-                return new NotFoundObjectResult("User Not Found.");
+                return new AuthResponse { Success = false, Message = "user not found." };
             }
 
             // Verify the password
             if (!PasswordHasher.VerifyPasswordHash(loginDto.Password, _user.PasswordHash, _user.PasswordSalt))
             {
-                return new UnauthorizedObjectResult(new { message = "Invalid email or password." });
+                return new AuthResponse { Success = false, Message = "Invalid email or password." };
             }
 
             var accessToken = _tokenService.GenerateAccessToken(_user);
@@ -89,7 +89,13 @@ namespace User.Registration
             _user.RefreshTokens.Add(refreshToken);
             await _context.SaveChangesAsync();
 
-            return new OkObjectResult(new { AccessToken = accessToken, RefreshToken = refreshToken.Token, Role = _user.Role });
+            return new AuthResponse
+            {
+                Success = true,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken.Token
+            };
+
         }
 
         public async Task<IActionResult> Logout(RefreshDTO refreshDto)
