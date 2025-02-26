@@ -8,11 +8,20 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Ticket.EventHandler;
-using Hangfire.AspNetCore;
-using Hangfire;
 using User.Registration;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin", builder =>
+    {
+        builder.WithOrigins("http://localhost:3000")  // Allow any origin
+               .AllowAnyMethod()  // Allow any HTTP method (GET, POST, etc.)
+               .AllowAnyHeader(); // Allow any headers
+    });
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -77,8 +86,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowSpecificOrigin");
 app.UseHttpsRedirection();
-
 app.UseAuthentication(); //  Authentication middleware must come **before** authorization
 app.UseAuthorization();
 

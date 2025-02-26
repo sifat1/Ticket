@@ -1,6 +1,7 @@
 using DB.DBcontext;
 using Dtos;
 using JWTAuthServer.DTOs;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using User.Registration;
 
@@ -8,6 +9,7 @@ namespace App.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    //[EnableCors("AllowSpecificOrigin")]
     public class UsersController : ControllerBase
     {
         private readonly UserRegistrationService _userManager;
