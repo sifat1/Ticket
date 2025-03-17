@@ -28,7 +28,7 @@ namespace App.Services.Manager
 
             if (getshow == null)
                 throw new ArgumentNullException(nameof(getshow));
-
+            
             _context.ticketSellingWindows.Add(new TicketSellingWindow
             {
                 ShowId = showOpening.ShowId,
@@ -38,7 +38,7 @@ namespace App.Services.Manager
 
             await _context.SaveChangesAsync();
         }
-        
+
         public async Task AddShowTask(CreateShow show)
         {
             if (show == null)
@@ -63,6 +63,8 @@ namespace App.Services.Manager
 
             var _event = new ShowAddedEvent { ShowId = _show.ShowId };
             await _eventPublisher.PublishAsync(_event);
+
+            await SetTicketOpeningAsync(new ShowOpening { ShowId = _show.ShowId, StartDate = show.startwindow, EndDate = show.endwindow });
         }
 
         public async Task AddStandAsync(CreateStand stand)
