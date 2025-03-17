@@ -1,9 +1,7 @@
-using System.Net.WebSockets;
 using DB.DBcontext;
 using Dtos;
 using Microsoft.EntityFrameworkCore;
 using ShowTickets.Ticketmodels;
-using Ticket.Events;
 
 namespace App.Services
 {
@@ -154,6 +152,8 @@ namespace App.Services
 
             return shows;
         }
+
+
 
     }
 }

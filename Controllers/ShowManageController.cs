@@ -38,6 +38,20 @@ namespace App.Controllers
             _venueService.AddVenue(createVenue);
         }
 
+        [HttpPost("add-show-opening")]
+        public async Task<IActionResult> AddShowOpening(ShowOpening showOpening)
+        {
+            try{
+                await _showService.SetTicketOpeningAsync(showOpening);
+                return Ok("Show opening added successfully");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            
+        }
+
         
     }
 }

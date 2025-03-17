@@ -1,5 +1,6 @@
 using DB.DBcontext;
 using Dtos;
+using Microsoft.EntityFrameworkCore;
 using ShowTickets.Ticketmodels;
 using Ticket.Events;
 
@@ -18,6 +19,26 @@ namespace App.Services.Manager
             _logger = logger;
         }
 
+        public async Task SetTicketOpeningAsync(ShowOpening showOpening)
+        {
+            if (showOpening == null)
+                throw new ArgumentNullException(nameof(showOpening));
+
+            var getshow = await _context.Shows.FirstOrDefaultAsync(ss => ss.ShowId == showOpening.ShowId);
+
+            if (getshow == null)
+                throw new ArgumentNullException(nameof(getshow));
+
+            _context.ticketSellingWindows.Add(new TicketSellingWindow
+            {
+                ShowId = showOpening.ShowId,
+                startdate = showOpening.StartDate,
+                enddate = showOpening.EndDate
+            });
+
+            await _context.SaveChangesAsync();
+        }
+        
         public async Task AddShowTask(CreateShow show)
         {
             if (show == null)
