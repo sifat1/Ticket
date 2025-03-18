@@ -52,12 +52,13 @@ namespace DB.DBcontext
                 .WithMany()
                 .HasForeignKey(ss => ss.StandSeatId);
 
+            // use this sql query only if you want to use postgresql
             /*
             CREATE EXTENSION IF NOT EXISTS pgcrypto;
             ALTER TABLE "ShowSeats"
             ALTER COLUMN "RowVersion" SET DEFAULT gen_random_bytes(8);
-
             */
+
             modelBuilder.Entity<ShowSeat>(entity =>
             {
                 entity.Property(e => e.RowVersion)
@@ -68,9 +69,9 @@ namespace DB.DBcontext
             });
 
             modelBuilder.Entity<TicketSellingWindow>()
-            .HasOne(ss => ss.show)
-            .WithOne(tw => tw.ticketSellingWindow)
-            .HasForeignKey<Show>(ss => ss.ShowId);
+                .HasOne(tw => tw.Show)
+                .WithOne(s => s.ticketSellingWindow)
+                .HasForeignKey<TicketSellingWindow>(tw => tw.ShowId);
 
             // Seed initial data for Roles, Users, Clients, and UserRoles.
             modelBuilder.Entity<Role>().HasData(

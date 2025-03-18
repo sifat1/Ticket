@@ -52,19 +52,24 @@ namespace App.Services.Manager
             _show.Date = show.Date;
 
             _context.Shows.Add(_show);
-            _context.SaveChanges();
 
             var _datewindow = new TicketSellingWindow();
             _datewindow.startdate = show.startwindow;
             _datewindow.enddate = show.endwindow;
-            _datewindow.show = _show;
+            _datewindow.Show = _show;
             _context.ticketSellingWindows.Add(_datewindow);
             _context.SaveChanges();
 
-            var _event = new ShowAddedEvent { ShowId = _show.ShowId };
-            await _eventPublisher.PublishAsync(_event);
+            //await SetTicketOpeningAsync(new ShowOpening { ShowId = _show.ShowId, StartDate = show.startwindow, EndDate = show.endwindow });
 
-            await SetTicketOpeningAsync(new ShowOpening { ShowId = _show.ShowId, StartDate = show.startwindow, EndDate = show.endwindow });
+            var _event = new ShowAddedEvent { ShowId = _show.ShowId };
+            try{
+                await _eventPublisher.PublishAsync(_event);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error publishing ShowAddedEvent: {ex.Message}");
+            }
         }
 
         public async Task AddStandAsync(CreateStand stand)

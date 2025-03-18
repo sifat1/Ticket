@@ -3,6 +3,7 @@ using System;
 using DB.DBcontext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ticket.Migrations
 {
     [DbContext(typeof(ShowDbContext))]
-    partial class ShowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250318131617_fixshow")]
+    partial class fixshow
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -53,10 +56,7 @@ namespace Ticket.Migrations
             modelBuilder.Entity("ShowTickets.Ticketmodels.Show", b =>
                 {
                     b.Property<long>("ShowId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("ShowId"));
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
@@ -179,9 +179,6 @@ namespace Ticket.Migrations
 
                     b.HasKey("TicketSellingWindowId");
 
-                    b.HasIndex("ShowId")
-                        .IsUnique();
-
                     b.ToTable("ticketSellingWindows");
                 });
 
@@ -300,6 +297,12 @@ namespace Ticket.Migrations
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Show", b =>
                 {
+                    b.HasOne("ShowTickets.Ticketmodels.TicketSellingWindow", "ticketSellingWindow")
+                        .WithOne("Show")
+                        .HasForeignKey("ShowTickets.Ticketmodels.Show", "ShowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ShowTickets.Ticketmodels.Venue", "Venue")
                         .WithMany()
                         .HasForeignKey("VenueId")
@@ -307,6 +310,8 @@ namespace Ticket.Migrations
                         .IsRequired();
 
                     b.Navigation("Venue");
+
+                    b.Navigation("ticketSellingWindow");
                 });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.ShowSeat", b =>
@@ -350,28 +355,20 @@ namespace Ticket.Migrations
                     b.Navigation("Stand");
                 });
 
-            modelBuilder.Entity("ShowTickets.Ticketmodels.TicketSellingWindow", b =>
-                {
-                    b.HasOne("ShowTickets.Ticketmodels.Show", "Show")
-                        .WithOne("ticketSellingWindow")
-                        .HasForeignKey("ShowTickets.Ticketmodels.TicketSellingWindow", "ShowId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Show");
-                });
-
             modelBuilder.Entity("ShowTickets.Ticketmodels.Show", b =>
                 {
                     b.Navigation("ShowSeats");
-
-                    b.Navigation("ticketSellingWindow")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Stand", b =>
                 {
                     b.Navigation("StandSeats");
+                });
+
+            modelBuilder.Entity("ShowTickets.Ticketmodels.TicketSellingWindow", b =>
+                {
+                    b.Navigation("Show")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.User.Users", b =>
