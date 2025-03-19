@@ -145,9 +145,17 @@ namespace App.Services
 
         public async Task<List<Show>> GetTicketOpeningAsync()
         {
+            var localNow = DateTime.UtcNow; // Convert to local time, making it timestamp
+            var getshowsidTask = _context.ticketSellingWindows
+                .Where(p => p.enddate > localNow && p.startdate < localNow)
+                .Select(p => p.ShowId)
+                .ToListAsync();
+
+            var getshowsid = await getshowsidTask; // Await the task to get the List<long>
+
             var shows = await _context.Shows
-                .Where(ss => _context.ticketSellingWindows
-                    .Any(p => p.ShowId == ss.ShowId && p.enddate > DateTime.Now && p.startdate < DateTime.Now))
+                .Include(ss => ss.Venue)
+                .Where(ss => getshowsid.Contains(ss.ShowId)) // Use Contains() instead of 'in'
                 .ToListAsync();
 
             return shows;

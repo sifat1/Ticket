@@ -59,6 +59,7 @@ namespace DB.DBcontext
             ALTER COLUMN "RowVersion" SET DEFAULT gen_random_bytes(8);
             */
 
+            /*
             modelBuilder.Entity<ShowSeat>(entity =>
             {
                 entity.Property(e => e.RowVersion)
@@ -67,6 +68,7 @@ namespace DB.DBcontext
                     .ValueGeneratedOnAddOrUpdate()
                     .HasColumnType("bytea");
             });
+            */
 
             modelBuilder.Entity<TicketSellingWindow>()
                 .HasOne(tw => tw.Show)
