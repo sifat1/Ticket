@@ -108,6 +108,24 @@ namespace App.Services.Manager
             }
         }
 
+        public async Task AddShowSeatPriceAsync(ShowStandPriceDTO showSeatPrice)
+        {
+            if (showSeatPrice == null)
+            {
+                throw new ArgumentNullException(nameof(showSeatPrice));
+            }
+
+            var _showSeatPrice = new ShowStandPrice
+            {
+                Price = showSeatPrice.Price,
+                ShowId = showSeatPrice.ShowId,
+                VenueId = showSeatPrice.VenueId,
+                StandId = showSeatPrice.StandId
+            };
+
+            _context.ShowStandPrice.Add(_showSeatPrice);
+            _context.SaveChanges();
+        }
     }
 
 

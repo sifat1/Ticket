@@ -18,6 +18,7 @@ namespace DB.DBcontext
         public DbSet<Role> Roles { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<TicketSellingWindow> ticketSellingWindows { get; set; }
+        public DbSet<ShowStandPrice> ShowStandPrice { get; set; }
 
         public ShowDbContext(DbContextOptions<ShowDbContext> options) : base(options) { }
 
@@ -47,11 +48,6 @@ namespace DB.DBcontext
                 .WithOne(ss => ss.Show)
                 .HasForeignKey(ss => ss.ShowId);
 
-            modelBuilder.Entity<ShowSeat>()
-                .HasOne(ss => ss.StandSeat)
-                .WithMany()
-                .HasForeignKey(ss => ss.StandSeatId);
-
             // use this sql query only if you want to use postgresql
             /*
             CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -74,6 +70,30 @@ namespace DB.DBcontext
                 .HasOne(tw => tw.Show)
                 .WithOne(s => s.ticketSellingWindow)
                 .HasForeignKey<TicketSellingWindow>(tw => tw.ShowId);
+
+            modelBuilder.Entity<ShowSeat>()
+                .HasOne(ss => ss.Venue)
+                .WithMany(v => v.ShowSeats)
+                .HasForeignKey(ss => ss.VenueId)
+                .OnDelete(DeleteBehavior.Cascade); // Enables ON DELETE CASCADE
+
+            modelBuilder.Entity<ShowSeat>()
+                .HasOne(ss => ss.Show)
+                .WithMany(s => s.ShowSeats)
+                .HasForeignKey(ss => ss.ShowId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ShowSeat>()
+                .HasOne(ss => ss.Stand)
+                .WithMany(s => s.ShowSeats)
+                .HasForeignKey(ss => ss.StandId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ShowSeat>()
+                .HasOne(ss => ss.StandSeat)
+                .WithMany(s => s.ShowSeats)
+                .HasForeignKey(ss => ss.StandSeatId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Seed initial data for Roles, Users, Clients, and UserRoles.
             modelBuilder.Entity<Role>().HasData(

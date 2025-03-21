@@ -12,6 +12,12 @@ namespace ShowTickets.Ticketmodels
         public long ShowId { get; set; }
         public Show Show { get; set; }
 
+        public long VenueId { get; set; }
+        public Venue Venue { get; set; }
+
+        public long StandId{ get; set; }
+        public Stand Stand { get; set; }
+
         public long StandSeatId { get; set; }
         public StandSeat StandSeat { get; set; }
         

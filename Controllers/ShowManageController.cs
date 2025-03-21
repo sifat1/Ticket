@@ -52,6 +52,20 @@ namespace App.Controllers
             
         }
 
+        [HttpPost("add-show-seat-price")]
+        public async Task<IActionResult> AddShowSeatPrice(ShowTicketPriceDTO showSeatPrice)
+        {
+            try
+            {
+                await _showService.AddShowSeatPriceAsync(showSeatPrice);
+                return Ok("Show seat price added successfully");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         
     }
 }

@@ -3,6 +3,7 @@ using System;
 using DB.DBcontext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ticket.Migrations
 {
     [DbContext(typeof(ShowDbContext))]
-    partial class ShowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250319131709_fixshowseat")]
+    partial class fixshowseat
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -107,9 +110,6 @@ namespace Ticket.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("text");
 
-                    b.Property<long>("VenueId")
-                        .HasColumnType("bigint");
-
                     b.HasKey("ShowSeatId");
 
                     b.HasIndex("ShowId");
@@ -118,40 +118,7 @@ namespace Ticket.Migrations
 
                     b.HasIndex("StandSeatId");
 
-                    b.HasIndex("VenueId");
-
                     b.ToTable("ShowSeats");
-                });
-
-            modelBuilder.Entity("ShowTickets.Ticketmodels.ShowStandPrice", b =>
-                {
-                    b.Property<long>("ShowStandPriceId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("ShowStandPriceId"));
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("numeric");
-
-                    b.Property<long>("ShowId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("StandId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("VenueId")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("ShowStandPriceId");
-
-                    b.HasIndex("ShowId");
-
-                    b.HasIndex("StandId");
-
-                    b.HasIndex("VenueId");
-
-                    b.ToTable("ShowStandPrice");
                 });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Stand", b =>
@@ -359,20 +326,14 @@ namespace Ticket.Migrations
                         .IsRequired();
 
                     b.HasOne("ShowTickets.Ticketmodels.Stand", "Stand")
-                        .WithMany("ShowSeats")
+                        .WithMany()
                         .HasForeignKey("StandId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ShowTickets.Ticketmodels.StandSeat", "StandSeat")
-                        .WithMany("ShowSeats")
+                        .WithMany()
                         .HasForeignKey("StandSeatId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ShowTickets.Ticketmodels.Venue", "Venue")
-                        .WithMany("ShowSeats")
-                        .HasForeignKey("VenueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -381,35 +342,6 @@ namespace Ticket.Migrations
                     b.Navigation("Stand");
 
                     b.Navigation("StandSeat");
-
-                    b.Navigation("Venue");
-                });
-
-            modelBuilder.Entity("ShowTickets.Ticketmodels.ShowStandPrice", b =>
-                {
-                    b.HasOne("ShowTickets.Ticketmodels.Show", "Show")
-                        .WithMany()
-                        .HasForeignKey("ShowId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ShowTickets.Ticketmodels.Stand", "Stand")
-                        .WithMany()
-                        .HasForeignKey("StandId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ShowTickets.Ticketmodels.Venue", "Venue")
-                        .WithMany()
-                        .HasForeignKey("VenueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Show");
-
-                    b.Navigation("Stand");
-
-                    b.Navigation("Venue");
                 });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Stand", b =>
@@ -455,14 +387,7 @@ namespace Ticket.Migrations
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Stand", b =>
                 {
-                    b.Navigation("ShowSeats");
-
                     b.Navigation("StandSeats");
-                });
-
-            modelBuilder.Entity("ShowTickets.Ticketmodels.StandSeat", b =>
-                {
-                    b.Navigation("ShowSeats");
                 });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.User.Users", b =>
@@ -472,8 +397,6 @@ namespace Ticket.Migrations
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Venue", b =>
                 {
-                    b.Navigation("ShowSeats");
-
                     b.Navigation("Stands");
                 });
 #pragma warning restore 612, 618

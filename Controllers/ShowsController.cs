@@ -26,10 +26,10 @@ namespace App.Controllers
             return Ok(shows);
         }
 
-        [HttpGet("{id}/available-seats")]
-        public async Task<IActionResult> GetAvailableSeats(int id)
+        [HttpGet("get-seats/{showid}/{standid}")]
+        public async Task<IActionResult> GetSeats(int showid, int standid)
         {
-            var seats = await _showService.GetAvailableSeatsAsync(id);
+            var seats = await _showService.GetSeatsAsync(showid, standid);
             return Ok(seats);
         }
 
@@ -61,6 +61,19 @@ namespace App.Controllers
             try
             {
             return Ok (await _showService.GetTicketOpeningAsync());
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("get-Shows-venue-stands/{venueId}")]
+        public async Task<IActionResult> GetVenueStands(int venueId)
+        {
+            try
+            {
+                return Ok(await _showService.getstands(venueId));
             }
             catch (Exception ex)
             {

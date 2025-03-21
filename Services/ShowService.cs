@@ -1,3 +1,4 @@
+using System.Numerics;
 using DB.DBcontext;
 using Dtos;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,12 @@ namespace App.Services
             _eventPublisher = eventPublisher;
             _logger = logger;
         }
+
+        public async Task<List<Stand>> getstands(int venueid)
+        {
+            return await _context.Stands.Where(venue => venue.VenueId == venueid).ToListAsync();
+        }
+
 
         public async Task<string> BookTicketAsync(BookingRequest request)
         {
@@ -132,14 +139,13 @@ namespace App.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<ShowSeat>> GetAvailableSeatsAsync(int showId)
+        public async Task<List<ShowSeat>> GetSeatsAsync(int showId, int StandId)
         {
             if (showId <= 0)
                 throw new ArgumentException("Invalid ShowId.", nameof(showId));
 
             return await _context.ShowSeats
-                .Where(ss => ss.ShowId == showId && !ss.IsBooked)
-                .Include(ss => ss.StandSeat)
+                .Where(ss => ss.ShowId == showId && ss.StandSeat.StandId == StandId)
                 .ToListAsync();
         }
 
@@ -159,6 +165,25 @@ namespace App.Services
                 .ToListAsync();
 
             return shows;
+        }
+
+        public async Task<decimal> GetTicketPrice(List<ShowTicketPriceDTO> tickets)
+        {
+            decimal Totalprice = 0;
+
+            foreach(var ticket in tickets)
+            {
+                var price  = _context.ShowStandPrice
+                    .Where(p => p.ShowId == ticket.ShowId && p.VenueId == ticket.VenueId && p.StandId == ticket.VenueId)
+                    .Select(p => p.Price)
+                    .FirstOrDefault();
+                
+                ticket.Price = price;
+                
+                Totalprice += price;
+            }
+
+            return Totalprice;
         }
 
 

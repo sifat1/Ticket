@@ -9,5 +9,7 @@ namespace ShowTickets.Ticketmodels{
         public long StandId { get; set; }
         [JsonIgnore]
         public Stand Stand { get; set; }
+
+        public ICollection<ShowSeat> ShowSeats { get; set; }
     }
 }
