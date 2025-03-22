@@ -167,24 +167,118 @@ namespace App.Services
             return shows;
         }
 
-        public async Task<decimal> GetTicketPrice(List<ShowTicketPriceDTO> tickets)
+        public async Task<object> GetTicketPrice(List<ShowTicketPriceDTO> tickets)
         {
+            try{
+
             decimal Totalprice = 0;
 
-            foreach(var ticket in tickets)
+            foreach (var ticket in tickets)
             {
-                var price  = _context.ShowStandPrice
+                var price =  _context.ShowStandPrice
                     .Where(p => p.ShowId == ticket.ShowId && p.VenueId == ticket.VenueId && p.StandId == ticket.VenueId)
                     .Select(p => p.Price)
                     .FirstOrDefault();
-                
+
                 ticket.Price = price;
-                
+
                 Totalprice += price;
             }
+            Console.WriteLine(tickets);
 
-            return Totalprice;
+            return new { total = Totalprice, tickets = tickets };
+            }
+            catch (Exception ex)
+            {
+                return new { message = $"An error occurred: {ex.Message}" };
+            }
         }
+
+        public async Task<object> ReserveSeats(List<ShowTicketPriceDTO> seatIds)
+        {
+
+            try
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                var result = await GetTicketPrice(seatIds) as dynamic;
+                if (result == null || result.tickets == null) return new { message = "Invalid ticket data" };
+
+                var _seatIds = result.tickets as List<ShowTicketPriceDTO>;
+                var expirationTime = DateTime.UtcNow.AddMinutes(10); // Hold for 10 minutes
+
+                // Lock seats for reservation using optimistic concurrency
+                var seats = _seatIds.Select(seatId => new SeatReservation
+                {
+                    ShowSeatId = seatId.ShowSeatId,
+                    UserId = 1,
+                    ExpirationTime = expirationTime,
+                    IsPaid = false,
+                    RowVersion = new byte[8] // Initialize for versioning
+                }).ToList();
+
+                _context.SeatReservations.AddRange(seats);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync(); // Commit if everything succeeds
+
+                var result_confirm = await ConfirmPayment(seats, 1);
+                return new { message = result_confirm };
+            }
+            catch (Exception ex)
+            {
+                return new { message = ex.Message };
+            }
+        }
+
+        public async Task<object> ConfirmPayment(List<SeatReservation> seatIds, long userId)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var reservations = await _context.SeatReservations
+                    .Where(s => seatIds.Select(si => si.ShowSeatId).Contains(s.ShowSeatId) && s.UserId == userId && s.IsPaid == false)
+                    .ToListAsync();
+
+                if (reservations.Count == 0)
+                {
+                    return new { message = "Reservation not found or already expired." };
+                }
+
+                // Check if all reservations match the expected version
+                for (int i = 0; i < reservations.Count; i++)
+                {
+                    if (!reservations[i].RowVersion.SequenceEqual(seatIds[i].RowVersion))
+                    {
+                        return new { message = "One or more seat reservations have expired or been taken by another user." };
+                    }
+                }
+
+                // Confirm payment and mark seats as paid
+                foreach (var reservation in reservations)
+                {
+                    reservation.IsPaid = true;
+                }
+
+                await _context.ShowSeats
+                .Where(s => seatIds.Select(r => r.ShowSeatId).Contains(s.ShowSeatId) &&
+                seatIds.Select(r => r.ShowId).Contains(s.ShowId) &&
+                seatIds.Select(r => r.VenueId).Contains(s.VenueId) &&
+                seatIds.Select(r => r.StandId).Contains(s.StandId))
+                .ExecuteUpdateAsync(setters => setters.SetProperty(s => s.IsBooked, true));
+
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync(); // Commit if everything succeeds
+
+                return new { success = "Payment confirmed, seats booked successfully." };
+            }
+            catch (Exception ex)
+            {
+                return new { message = ex.Message };
+            }
+        }
+
+
 
 
 

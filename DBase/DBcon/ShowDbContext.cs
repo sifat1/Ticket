@@ -20,6 +20,8 @@ namespace DB.DBcontext
         public DbSet<TicketSellingWindow> ticketSellingWindows { get; set; }
         public DbSet<ShowStandPrice> ShowStandPrice { get; set; }
 
+        public DbSet<SeatReservation> SeatReservations { get; set; }
+
         public ShowDbContext(DbContextOptions<ShowDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

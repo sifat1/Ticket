@@ -53,7 +53,7 @@ namespace App.Controllers
         }
 
         [HttpPost("add-show-seat-price")]
-        public async Task<IActionResult> AddShowSeatPrice(ShowTicketPriceDTO showSeatPrice)
+        public async Task<IActionResult> AddShowSeatPrice(ShowStandPriceDTO showSeatPrice)
         {
             try
             {

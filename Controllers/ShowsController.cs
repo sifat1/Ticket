@@ -60,7 +60,7 @@ namespace App.Controllers
         {
             try
             {
-            return Ok (await _showService.GetTicketOpeningAsync());
+                return Ok(await _showService.GetTicketOpeningAsync());
             }
             catch (Exception ex)
             {
@@ -74,6 +74,34 @@ namespace App.Controllers
             try
             {
                 return Ok(await _showService.getstands(venueId));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("get-ticket-price")]
+        public async Task<IActionResult> GetTicketPrice([FromBody] List<ShowTicketPriceDTO> tickets)
+        {
+            try
+            {
+                object result = await _showService.GetTicketPrice(tickets);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("get-ticket-reserve-pay")]
+        public async Task<IActionResult> ReserveSeatsandPay([FromBody] List<ShowTicketPriceDTO> tickets)
+        {
+            try
+            {
+                object result = await _showService.ReserveSeats(tickets);
+                return Ok(result);
             }
             catch (Exception ex)
             {
