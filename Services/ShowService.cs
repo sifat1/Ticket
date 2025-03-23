@@ -169,24 +169,25 @@ namespace App.Services
 
         public async Task<object> GetTicketPrice(List<ShowTicketPriceDTO> tickets)
         {
-            try{
-
-            decimal Totalprice = 0;
-
-            foreach (var ticket in tickets)
+            try
             {
-                var price =  _context.ShowStandPrice
-                    .Where(p => p.ShowId == ticket.ShowId && p.VenueId == ticket.VenueId && p.StandId == ticket.VenueId)
-                    .Select(p => p.Price)
-                    .FirstOrDefault();
 
-                ticket.Price = price;
+                decimal Totalprice = 0;
 
-                Totalprice += price;
-            }
-            Console.WriteLine(tickets);
+                foreach (var ticket in tickets)
+                {
+                    var price = _context.ShowStandPrice
+                        .Where(p => p.ShowId == ticket.ShowId && p.VenueId == ticket.VenueId && p.StandId == ticket.VenueId)
+                        .Select(p => p.Price)
+                        .FirstOrDefault();
 
-            return new { total = Totalprice, tickets = tickets };
+                    ticket.Price = price;
+
+                    Totalprice += price;
+                }
+                Console.WriteLine(tickets);
+
+                return new { total = Totalprice, tickets = tickets };
             }
             catch (Exception ex)
             {
@@ -196,39 +197,69 @@ namespace App.Services
 
         public async Task<object> ReserveSeats(List<ShowTicketPriceDTO> seatIds)
         {
-
             try
             {
                 using var transaction = await _context.Database.BeginTransactionAsync();
-                var result = await GetTicketPrice(seatIds) as dynamic;
-                if (result == null || result.tickets == null) return new { message = "Invalid ticket data" };
 
-                var _seatIds = result.tickets as List<ShowTicketPriceDTO>;
+                foreach (var ticket in seatIds)
+                {
+                    var price = _context.ShowStandPrice
+                        .Where(p => p.ShowId == ticket.ShowId && p.VenueId == ticket.VenueId && p.StandId == ticket.VenueId)
+                        .Select(p => p.Price)
+                        .FirstOrDefault();
+
+                    ticket.Price = price;
+                }
+
+
+                if (seatIds == null || seatIds.Count == 0)
+                {
+                    return new Exception("No seats to reserve.");
+                }
+
                 var expirationTime = DateTime.UtcNow.AddMinutes(10); // Hold for 10 minutes
 
-                // Lock seats for reservation using optimistic concurrency
-                var seats = _seatIds.Select(seatId => new SeatReservation
+                Console.WriteLine(seatIds);
+
+                // Create seat reservation objects
+                var seats = seatIds.Select(seatId => new SeatReservation
                 {
                     ShowSeatId = seatId.ShowSeatId,
-                    UserId = 1,
+                    ShowId = seatId.ShowId, // Ensure the ShowId is populated correctly
+                    VenueId = seatId.VenueId, // Ensure the VenueId is populated correctly
+                    StandId = seatId.StandId, // Ensure the StandId is populated correctly
+                    UserId = 1, // Use the actual user ID here
                     ExpirationTime = expirationTime,
                     IsPaid = false,
-                    RowVersion = new byte[8] // Initialize for versioning
+                    Price = seatId.Price, // Ensure the price is set correctly
+                    RowVersion = new byte[8] // Initialize for versioning; you might need to handle this properly
                 }).ToList();
 
+                // Add reservations to the context
+                // Validate seat reservations before adding
+                if (seats.Any(seat => seat.ShowSeatId <= 0 || seat.ShowId <= 0 || seat.VenueId <= 0 || seat.StandId <= 0 || seat.Price <= 0))
+                {
+                    throw new Exception("Invalid seat reservation data. Ensure all fields are populated correctly.");
+                }
+
                 _context.SeatReservations.AddRange(seats);
+
+
                 await _context.SaveChangesAsync();
 
-                await transaction.CommitAsync(); // Commit if everything succeeds
+                // Commit the transaction if everything goes fine
+                await transaction.CommitAsync();
 
-                var result_confirm = await ConfirmPayment(seats, 1);
-                return new { message = result_confirm };
+                await ConfirmPayment(seats, 1);
+
+                return new { success = "Seats reserved successfully." };
             }
             catch (Exception ex)
             {
                 return new { message = ex.Message };
             }
         }
+
 
         public async Task<object> ConfirmPayment(List<SeatReservation> seatIds, long userId)
         {
