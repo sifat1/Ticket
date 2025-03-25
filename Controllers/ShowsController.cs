@@ -73,6 +73,7 @@ namespace App.Controllers
             }
         }
 
+        [Authorize(Roles = "User")]
         [HttpPost("get-ticket-price")]
         public async Task<IActionResult> GetTicketPrice([FromBody] List<ShowTicketPriceDTO> tickets)
         {
@@ -87,6 +88,7 @@ namespace App.Controllers
             }
         }
 
+        [Authorize(Roles = "User")]
         [HttpPost("get-ticket-reserve-pay")]
         public async Task<IActionResult> ReserveSeatsandPay([FromBody] List<ShowTicketPriceDTO> tickets)
         {
