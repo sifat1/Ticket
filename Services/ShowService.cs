@@ -1,6 +1,4 @@
-using System.Numerics;
 using DB.DBcontext;
-using Dtos;
 using Microsoft.EntityFrameworkCore;
 using ShowTickets.Ticketmodels;
 
@@ -24,119 +22,16 @@ namespace App.Services
             return await _context.Stands.Where(venue => venue.VenueId == venueid).ToListAsync();
         }
 
-
-        public async Task<string> BookTicketAsync(BookingRequest request)
+        public async Task<List<Stand>> GetShowStand(int ShowId)
         {
-            if (request == null || request.ShowId <= 0 || request.SeatId <= 0 || string.IsNullOrEmpty(request.UserId))
-                return "Invalid booking request.";
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try
-            {
-                var showSeat = await _context.ShowSeats
-                    .FirstOrDefaultAsync(ss => ss.ShowId == request.ShowId && ss.StandSeatId == request.SeatId);
-
-                if (showSeat == null)
-                    return "Seat not found for the selected show.";
-
-                if (showSeat.IsBooked)
-                    return "Seat is already booked.";
-
-                // Update booking details
-                showSeat.IsBooked = true;
-                showSeat.BookingTime = DateTime.UtcNow;
-                showSeat.UserId = request.UserId;
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return "Booking successful!";
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return $"Booking failed: {ex.Message}";
-            }
-        }
-
-        public async Task<string> CancelBookingAsync(BookingRequest request)
-        {
-            if (request == null || request.ShowId <= 0 || request.SeatId <= 0 || string.IsNullOrEmpty(request.UserId))
-                return "Invalid cancellation request.";
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try
-            {
-                var showSeat = await _context.ShowSeats
-                    .FirstOrDefaultAsync(ss => ss.ShowId == request.ShowId && ss.StandSeatId == request.SeatId);
-
-                if (showSeat == null)
-                    return "Seat not found for the selected show.";
-
-                if (!showSeat.IsBooked || showSeat.UserId != request.UserId)
-                    return "Cannot cancel: Seat is not booked or belongs to a different user.";
-
-                // Update booking details
-                showSeat.IsBooked = false;
-                showSeat.BookingTime = null;
-                showSeat.UserId = null;
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return "Booking canceled successfully!";
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return $"Cancellation failed: {ex.Message}";
-            }
-        }
-
-        public async Task<string> BookTicketWithOptimisticConcurrencyAsync(BookingRequest request)
-        {
-            if (request == null || request.ShowId <= 0 || request.SeatId <= 0 || string.IsNullOrEmpty(request.UserId))
-                return "Invalid booking request.";
-
-            try
-            {
-                var showSeat = await _context.ShowSeats
-                    .FirstOrDefaultAsync(ss => ss.ShowId == request.ShowId && ss.StandSeatId == request.SeatId);
-
-                if (showSeat == null)
-                    return "Seat not found for the selected show.";
-
-                if (showSeat.IsBooked)
-                    return "Seat is already booked.";
-
-                // Update booking details
-                showSeat.IsBooked = true;
-                showSeat.BookingTime = DateTime.UtcNow;
-                showSeat.UserId = request.UserId;
-
-                await _context.SaveChangesAsync();
-                return "Booking successful!";
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return "Booking failed due to concurrency conflict. Please try again.";
-            }
+            var stands = await _context.ShowSeats.Where(s => s.ShowId == ShowId)
+                        .Select(s => s.Stand).Distinct().ToListAsync();
+            return stands;
         }
 
         public async Task<List<Show>> GetShowsAsync()
         {
             return await _context.Shows.Include(s => s.Venue).ToListAsync();
-        }
-
-        public async Task AddShowAsync(Show show)
-        {
-            if (show == null)
-                throw new ArgumentNullException(nameof(show));
-
-            await _context.Shows.AddAsync(show);
-            await _context.SaveChangesAsync();
         }
 
         public async Task<List<ShowSeat>> GetSeatsAsync(int showId, int StandId)
@@ -176,10 +71,10 @@ namespace App.Services
 
                 foreach (var ticket in tickets)
                 {
-                    var price = _context.ShowStandPrice
+                    var price = await _context.ShowStandPrice
                         .Where(p => p.ShowId == ticket.ShowId && p.VenueId == ticket.VenueId && p.StandId == ticket.VenueId)
                         .Select(p => p.Price)
-                        .FirstOrDefault();
+                        .FirstOrDefaultAsync();
 
                     ticket.Price = price;
 
@@ -290,12 +185,21 @@ namespace App.Services
                     reservation.IsPaid = true;
                 }
 
-                await _context.ShowSeats
-                .Where(s => seatIds.Select(r => r.ShowSeatId).Contains(s.ShowSeatId) &&
-                seatIds.Select(r => r.ShowId).Contains(s.ShowId) &&
-                seatIds.Select(r => r.VenueId).Contains(s.VenueId) &&
-                seatIds.Select(r => r.StandId).Contains(s.StandId))
-                .ExecuteUpdateAsync(setters => setters.SetProperty(s => s.IsBooked, true));
+                var seatsToUpdate = await _context.ShowSeats
+                    .Where(s => seatIds.Select(r => r.ShowSeatId).Contains(s.ShowSeatId) &&
+                                seatIds.Select(r => r.ShowId).Contains(s.ShowId) &&
+                                seatIds.Select(r => r.VenueId).Contains(s.VenueId) &&
+                                seatIds.Select(r => r.StandId).Contains(s.StandId))
+                    .ToListAsync();
+
+                foreach (var seat in seatsToUpdate)
+                {
+                    seat.IsBooked = true;
+                    seat.UserId = 1;
+                    seat.BookingTime = DateTime.UtcNow;
+                }
+
+                _context.ShowSeats.UpdateRange(seatsToUpdate);
 
                 await _context.SaveChangesAsync();
 

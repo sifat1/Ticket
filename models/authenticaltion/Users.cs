@@ -22,6 +22,8 @@ namespace ShowTickets.Ticketmodels.User
         public string Role { get; set; } = "User";  // Default role is "User"
         public List<RefreshToken> RefreshTokens { get; set; } = new();
 
+        public List<ShowSeat> ShowTickets { get; set; } = new();
+
     }
 
 }

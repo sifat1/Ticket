@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using ShowTickets.Ticketmodels.User;
 
 namespace ShowTickets.Ticketmodels
 {
@@ -7,7 +8,8 @@ namespace ShowTickets.Ticketmodels
         public long ShowSeatId { get; set; }
         public bool IsBooked { get; set; }
         public DateTime? BookingTime { get; set; }
-        public string? UserId { get; set; }
+        public long? UserId { get; set; }
+        public Users User { get; set; }
 
         public long ShowId { get; set; }
         public Show Show { get; set; }

@@ -3,6 +3,7 @@ using System;
 using DB.DBcontext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ticket.Migrations
 {
     [DbContext(typeof(ShowDbContext))]
-    partial class ShowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250323120820_showseatefix")]
+    partial class showseatefix
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,7 +156,7 @@ namespace Ticket.Migrations
                     b.Property<long>("StandSeatId")
                         .HasColumnType("bigint");
 
-                    b.Property<long?>("UserId")
+                    b.Property<long>("UserId")
                         .HasColumnType("bigint");
 
                     b.Property<long>("VenueId")
@@ -457,8 +460,10 @@ namespace Ticket.Migrations
                         .IsRequired();
 
                     b.HasOne("ShowTickets.Ticketmodels.User.Users", "User")
-                        .WithMany("ShowTickets")
-                        .HasForeignKey("UserId");
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("ShowTickets.Ticketmodels.Venue", "Venue")
                         .WithMany("ShowSeats")
@@ -560,8 +565,6 @@ namespace Ticket.Migrations
             modelBuilder.Entity("ShowTickets.Ticketmodels.User.Users", b =>
                 {
                     b.Navigation("RefreshTokens");
-
-                    b.Navigation("ShowTickets");
                 });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Venue", b =>

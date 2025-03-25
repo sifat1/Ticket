@@ -33,28 +33,7 @@ namespace App.Controllers
             return Ok(seats);
         }
 
-        [Authorize(Roles = "User")]
-        [HttpPost("book")]
-        public async Task<IActionResult> BookTicket([FromBody] BookingRequest request)
-        {
-            var result = await _showService.BookTicketAsync(request);
-            return Ok(new { Message = result });
-        }
-
-        [HttpPost("cancel")]
-        public async Task<IActionResult> CancelTicket([FromBody] BookingRequest request)
-        {
-            var result = await _showService.CancelBookingAsync(request);
-            return Ok(new { Message = result });
-        }
-
-        [HttpPost("book-with-concurrency")]
-        public async Task<IActionResult> BookTicketWithConcurrency([FromBody] BookingRequest request)
-        {
-            var result = await _showService.BookTicketWithOptimisticConcurrencyAsync(request);
-            return Ok(new { Message = result });
-        }
-
+        //[Authorize(Roles = "User")]
         [HttpGet("get-Shows-with-sellingdate")]
         public async Task<IActionResult> GetShowsOpening()
         {
@@ -74,6 +53,19 @@ namespace App.Controllers
             try
             {
                 return Ok(await _showService.getstands(venueId));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("get-Shows-stands/{ShowId}")]
+        public async Task<IActionResult> GetShowStand(int ShowId)
+        {
+            try
+            {
+                return Ok(await _showService.GetShowStand(ShowId));
             }
             catch (Exception ex)
             {
