@@ -36,7 +36,7 @@ namespace App.Services
                 .Where(r => r.IsPaid == false && r.ExpirationTime > DateTime.UtcNow)
                 .ToListAsync();
 
-            List<ShowTicketPriceDTO> unpaidReservations = reservations.Select(r => new ShowTicketPriceDTO
+            var unpaidReservations = reservations.Select(r => new ShowTicketPriceDTO
             {
                 ShowSeatId = r.ShowSeatId,
                 ShowId = r.ShowId,
@@ -68,20 +68,12 @@ namespace App.Services
         {
             _logger.LogInformation("Getting shows with open ticket sales.");
             var localNow = DateTime.UtcNow; // Convert to local time, making it timestamp
-            var getshowsidTask = _context.ticketSellingWindows
-                .Where(p => p.enddate > localNow && p.startdate < localNow)
-                .Select(p => p.ShowId)
-                .ToListAsync();
 
-            var getshowsid = await getshowsidTask; // Await the task to get the List<long>
+            List<Show> selectedshow = await _context.ticketSellingWindows.Where(
+                    p => p.enddate > localNow && p.startdate < localNow)
+                .Select(p => p.Show).ToListAsync();
 
-            _logger.LogInformation("Getting shows with open ticket sales: {getshowsid}", getshowsid);
-            var shows = await _context.Shows
-                .Include(ss => ss.Venue)
-                .Where(ss => getshowsid.Contains(ss.ShowId)) // Use Contains() instead of 'in'
-                .ToListAsync();
-
-            return shows;
+            return selectedshow;
         }
 
         public async Task<object> GetTicketPrice(List<ShowTicketPriceDTO> tickets)
@@ -102,7 +94,6 @@ namespace App.Services
 
                     Totalprice += price;
                 }
-                Console.WriteLine(tickets);
 
                 return new { total = Totalprice, tickets = tickets };
             }
@@ -180,6 +171,7 @@ namespace App.Services
         public async Task<object> ConfirmPayment(List<SeatReservation> seatIds, long userId)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
+            
             try
             {
                 _logger.LogInformation("Confirming payment for {seatIds}", seatIds);
@@ -207,16 +199,6 @@ namespace App.Services
                     reservation.IsPaid = true;
                 }
 
-                /*
-
-                var seatsToUpdate = await _context.ShowSeats
-                    .Where(s => seatIds.Select(r => r.ShowSeatId).Contains(s.ShowSeatId) &&
-                                seatIds.Select(r => r.ShowId).Contains(s.ShowId) &&
-                                seatIds.Select(r => r.VenueId).Contains(s.VenueId) &&
-                                seatIds.Select(r => r.StandId).Contains(s.StandId))
-                    .ToListAsync();
-                */
-
                 await _context.ShowSeats.Where(
                     s => reservations.Select(r => r.ShowSeatId).Contains(s.ShowSeatId)
                 ).ExecuteUpdateAsync(setters => 
@@ -224,18 +206,6 @@ namespace App.Services
                 .SetProperty(s => s.UserId, 1)
                 .SetProperty(s => s.BookingTime, DateTime.UtcNow)
                 );
-
-                /*
-
-                foreach (var seat in seatsToUpdate)
-                {
-                    seat.IsBooked = true;
-                    seat.UserId = 1;
-                    seat.BookingTime = DateTime.UtcNow;
-                }
-
-                _context.ShowSeats.UpdateRange(seatsToUpdate);
-                */
 
                 await _context.SaveChangesAsync();
 
@@ -248,10 +218,6 @@ namespace App.Services
                 return new { message = ex.Message };
             }
         }
-
-
-
-
-
+        
     }
 }

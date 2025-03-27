@@ -22,8 +22,8 @@ namespace App.Controllers
             _context = context;
         }
 
-        [HttpPost("registration")]
-        public async Task<IActionResult> CreateUser(RegistrationDTO registrationDTO)
+        [HttpPost("Registration")]
+        public async Task<IActionResult> CreateUser([FromBody] RegistrationDTO registrationDTO)
         {
             try
             {
