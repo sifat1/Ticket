@@ -1,9 +1,8 @@
 
 
 using App.Services;
-using Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ShowTickets.Ticketmodels;
 
 namespace App.Controllers
 {
@@ -25,39 +24,81 @@ namespace App.Controllers
             return Ok(shows);
         }
 
-        [HttpGet("{id}/available-seats")]
-        public async Task<IActionResult> GetAvailableSeats(int id)
+        [HttpGet("get-seats/{showid}/{standid}")]
+        public async Task<IActionResult> GetSeats(int showid, int standid)
         {
-            var seats = await _showService.GetAvailableSeatsAsync(id);
+            var seats = await _showService.GetSeatsAsync(showid, standid);
             return Ok(seats);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddShow([FromBody] Show show)
+        //[Authorize(Roles = "User")]
+        [HttpGet("get-Shows-with-sellingdate")]
+        public async Task<IActionResult> GetShowsOpening()
         {
-            await _showService.AddShowAsync(show);
-            return Ok();
+            try
+            {
+                return Ok(await _showService.GetTicketOpeningAsync());
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpPost("book")]
-        public async Task<IActionResult> BookTicket([FromBody] BookingRequest request)
+        [HttpGet("get-Shows-venue-stands/{venueId}")]
+        public async Task<IActionResult> GetVenueStands(int venueId)
         {
-            var result = await _showService.BookTicketAsync(request);
-            return Ok(new { Message = result });
+            try
+            {
+                return Ok(await _showService.getstands(venueId));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpPost("cancel")]
-        public async Task<IActionResult> CancelTicket([FromBody] BookingRequest request)
+        [HttpGet("get-Shows-stands/{ShowId}")]
+        public async Task<IActionResult> GetShowStand(int ShowId)
         {
-            var result = await _showService.CancelBookingAsync(request);
-            return Ok(new { Message = result });
+            try
+            {
+                return Ok(await _showService.GetShowStand(ShowId));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpPost("book-with-concurrency")]
-        public async Task<IActionResult> BookTicketWithConcurrency([FromBody] BookingRequest request)
+        [Authorize(Roles = "User")]
+        [HttpPost("get-ticket-price")]
+        public async Task<IActionResult> GetTicketPrice([FromBody] List<ShowTicketPriceDTO> tickets)
         {
-            var result = await _showService.BookTicketWithOptimisticConcurrencyAsync(request);
-            return Ok(new { Message = result });
+            try
+            {
+                object result = await _showService.GetTicketPrice(tickets);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [Authorize(Roles = "User")]
+        [HttpPost("get-ticket-reserve-pay")]
+        public async Task<IActionResult> ReserveSeatsandPay([FromBody] List<ShowTicketPriceDTO> tickets)
+        {
+            try
+            {
+                object result = await _showService.ReserveSeats(tickets);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

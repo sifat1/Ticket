@@ -9,6 +9,8 @@ namespace ShowTickets.Ticketmodels{
         public Venue Venue { get; set; }
 
         public ICollection<ShowSeat> ShowSeats { get; set; }
+
+        public TicketSellingWindow ticketSellingWindow{ get; set; }
     }
 
 

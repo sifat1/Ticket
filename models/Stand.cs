@@ -12,6 +12,7 @@ namespace ShowTickets.Ticketmodels{
         public Venue Venue { get; set; }
 
         public ICollection<StandSeat> StandSeats { get; set; }
+        public ICollection<ShowSeat> ShowSeats { get; set; }
     }
 
 

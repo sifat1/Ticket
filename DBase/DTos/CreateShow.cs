@@ -1,8 +1,20 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Dtos{
     public class CreateShow{
-        public string Name { get; set; }
-        public long VenueId { get; set; }
 
+        [Required]
+        public required string Name { get; set; }
+        [Required]
+        public long VenueId { get; set; }
+        [Required]
+        [DataType(DataType.DateTime)]
         public DateTime Date { get; set; }
+        [Required]
+        [DataType(DataType.DateTime)]
+        public DateTime startwindow { get; set; }
+        [Required]
+        [DataType(DataType.DateTime)]
+        public DateTime endwindow { get; set; }
     }
 }

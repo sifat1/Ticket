@@ -45,6 +45,8 @@ namespace Ticket.EventHandler
             {
                 ShowId = showEvent.ShowId,
                 StandSeatId = seat.StandSeatId,
+                StandId = seat.StandId,
+                VenueId = venueId,
                 IsBooked = false
             }).ToList();
 

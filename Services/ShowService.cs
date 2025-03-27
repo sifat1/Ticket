@@ -1,9 +1,6 @@
-using System.Net.WebSockets;
 using DB.DBcontext;
-using Dtos;
 using Microsoft.EntityFrameworkCore;
 using ShowTickets.Ticketmodels;
-using Ticket.Events;
 
 namespace App.Services
 {
@@ -20,185 +17,207 @@ namespace App.Services
             _logger = logger;
         }
 
-        public async Task<string> BookTicketAsync(BookingRequest request)
+        public async Task<List<Stand>> getstands(int venueid)
         {
-            if (request == null || request.ShowId <= 0 || request.SeatId <= 0 || string.IsNullOrEmpty(request.UserId))
-                return "Invalid booking request.";
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try
-            {
-                var showSeat = await _context.ShowSeats
-                    .FirstOrDefaultAsync(ss => ss.ShowId == request.ShowId && ss.StandSeatId == request.SeatId);
-
-                if (showSeat == null)
-                    return "Seat not found for the selected show.";
-
-                if (showSeat.IsBooked)
-                    return "Seat is already booked.";
-
-                // Update booking details
-                showSeat.IsBooked = true;
-                showSeat.BookingTime = DateTime.UtcNow;
-                showSeat.UserId = request.UserId;
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return "Booking successful!";
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return $"Booking failed: {ex.Message}";
-            }
+            return await _context.Stands.Where(venue => venue.VenueId == venueid).ToListAsync();
         }
 
-        public async Task<string> CancelBookingAsync(BookingRequest request)
+        public async Task<List<Stand>> GetShowStand(int ShowId)
         {
-            if (request == null || request.ShowId <= 0 || request.SeatId <= 0 || string.IsNullOrEmpty(request.UserId))
-                return "Invalid cancellation request.";
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try
-            {
-                var showSeat = await _context.ShowSeats
-                    .FirstOrDefaultAsync(ss => ss.ShowId == request.ShowId && ss.StandSeatId == request.SeatId);
-
-                if (showSeat == null)
-                    return "Seat not found for the selected show.";
-
-                if (!showSeat.IsBooked || showSeat.UserId != request.UserId)
-                    return "Cannot cancel: Seat is not booked or belongs to a different user.";
-
-                // Update booking details
-                showSeat.IsBooked = false;
-                showSeat.BookingTime = null;
-                showSeat.UserId = null;
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return "Booking canceled successfully!";
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return $"Cancellation failed: {ex.Message}";
-            }
+            _logger.LogInformation("Getting stands for show with ID: {ShowId}", ShowId);
+            var stands = await _context.ShowSeats.Where(s => s.ShowId == ShowId)
+                        .Select(s => s.Stand).Distinct().ToListAsync();
+            return stands;
         }
 
-        public async Task<string> BookTicketWithOptimisticConcurrencyAsync(BookingRequest request)
+        public async Task<List<ShowTicketPriceDTO>> UnpaidReservations()
         {
-            if (request == null || request.ShowId <= 0 || request.SeatId <= 0 || string.IsNullOrEmpty(request.UserId))
-                return "Invalid booking request.";
+            var reservations = await _context.SeatReservations
+                .Where(r => r.IsPaid == false && r.ExpirationTime > DateTime.UtcNow)
+                .ToListAsync();
 
-            try
+            var unpaidReservations = reservations.Select(r => new ShowTicketPriceDTO
             {
-                var showSeat = await _context.ShowSeats
-                    .FirstOrDefaultAsync(ss => ss.ShowId == request.ShowId && ss.StandSeatId == request.SeatId);
+                ShowSeatId = r.ShowSeatId,
+                ShowId = r.ShowId,
+                VenueId = r.VenueId,
+                StandId = r.StandId,
+                Price = r.Price
+            }).ToList();
 
-                if (showSeat == null)
-                    return "Seat not found for the selected show.";
-
-                if (showSeat.IsBooked)
-                    return "Seat is already booked.";
-
-                // Update booking details
-                showSeat.IsBooked = true;
-                showSeat.BookingTime = DateTime.UtcNow;
-                showSeat.UserId = request.UserId;
-
-                await _context.SaveChangesAsync();
-                return "Booking successful!";
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return "Booking failed due to concurrency conflict. Please try again.";
-            }
+            return unpaidReservations;
         }
 
         public async Task<List<Show>> GetShowsAsync()
         {
+            _logger.LogInformation("Getting all shows.");
             return await _context.Shows.Include(s => s.Venue).ToListAsync();
         }
 
-        public async Task AddShowAsync(Show show)
-        {
-            if (show == null)
-                throw new ArgumentNullException(nameof(show));
-
-            await _context.Shows.AddAsync(show);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<List<ShowSeat>> GetAvailableSeatsAsync(int showId)
+        public async Task<List<ShowSeat>> GetSeatsAsync(int showId, int StandId)
         {
             if (showId <= 0)
                 throw new ArgumentException("Invalid ShowId.", nameof(showId));
 
             return await _context.ShowSeats
-                .Where(ss => ss.ShowId == showId && !ss.IsBooked)
-                .Include(ss => ss.StandSeat)
+                .Where(ss => ss.ShowId == showId && ss.StandSeat.StandId == StandId)
                 .ToListAsync();
         }
-        public async Task AddStandAsync(CreateStand stand)
+
+        public async Task<List<Show>> GetTicketOpeningAsync()
         {
-            if (stand == null)
-            {
-                throw new ArgumentNullException(nameof(stand));
-            }
+            _logger.LogInformation("Getting shows with open ticket sales.");
+            var localNow = DateTime.UtcNow; // Convert to local time, making it timestamp
 
-            // Explicit property mapping
-            var _stand = new Stand
-            {
-                VenueId = stand.VenueId,
-                SeatCount = (int)(stand?.capacity), // Null check before accessing capacity
-                Name = stand?.Name // Null check before accessing name
-            };
+            List<Show> selectedshow = await _context.ticketSellingWindows.Where(
+                    p => p.enddate > localNow && p.startdate < localNow)
+                .Select(p => p.Show).ToListAsync();
 
-            _context.Stands.Add(_stand);
-            _context.SaveChanges();
+            return selectedshow;
+        }
 
-            // Event publishing with basic error handling
-            var event_ = new StandAddedEvent
-            {
-                StandId = _stand.StandId,
-                SeatCount = _stand.SeatCount
-            };
-
+        public async Task<object> GetTicketPrice(List<ShowTicketPriceDTO> tickets)
+        {
             try
             {
-                await _eventPublisher.PublishAsync(event_);
+
+                decimal Totalprice = 0;
+                _logger.LogInformation("Getting ticket prices for {tickets}", tickets);
+                foreach (var ticket in tickets)
+                {
+                    var price = await _context.ShowStandPrice
+                        .Where(p => p.ShowId == ticket.ShowId && p.VenueId == ticket.VenueId && p.StandId == ticket.StandId)
+                        .Select(p => p.Price)
+                        .FirstOrDefaultAsync();
+
+                    ticket.Price = price;
+
+                    Totalprice += price;
+                }
+
+                return new { total = Totalprice, tickets = tickets };
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error publishing StandAddedEvent: {ex.Message}");
-                // Decide on further actions based on the exception (e.g., retry)
+                return new { message = $"An error occurred: {ex.Message}" };
             }
         }
 
-
-        public async Task AddShowTask(CreateShow show)
+        public async Task<object> ReserveSeats(List<ShowTicketPriceDTO> seatIds)
         {
-            if (show == null)
+            try
             {
-                throw new ArgumentNullException(nameof(show));
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                _logger.LogInformation("Reserving seats for {seatIds}", seatIds);
+
+                foreach (var ticket in seatIds)
+                {
+                    var price = _context.ShowStandPrice
+                        .Where(p => p.ShowId == ticket.ShowId && p.VenueId == ticket.VenueId && p.StandId == ticket.StandId)
+                        .Select(p => p.Price)
+                        .FirstOrDefault();
+
+                    ticket.Price = price;
+                }
+
+
+                if (seatIds == null || seatIds.Count == 0)
+                {
+                    return new Exception("No seats to reserve.");
+                }
+
+                var expirationTime = DateTime.UtcNow.AddMinutes(10); // Hold for 10 minutes
+
+                // Create seat reservation objects
+                var seats = seatIds.Select(seatId => new SeatReservation
+                {
+                    ShowSeatId = seatId.ShowSeatId,
+                    ShowId = seatId.ShowId, // Ensure the ShowId is populated correctly
+                    VenueId = seatId.VenueId, // Ensure the VenueId is populated correctly
+                    StandId = seatId.StandId, // Ensure the StandId is populated correctly
+                    UserId = 1, // Use the actual user ID here
+                    ExpirationTime = expirationTime,
+                    IsPaid = false,
+                    Price = seatId.Price, // Ensure the price is set correctly
+                    RowVersion = new byte[8] // Initialize for versioning; you might need to handle this properly
+                }).ToList();
+
+                // Add reservations to the context
+                // Validate seat reservations before adding
+                if (seats.Any(seat => seat.ShowSeatId <= 0 || seat.ShowId <= 0 || seat.VenueId <= 0 || seat.StandId <= 0 || seat.Price <= 0))
+                {
+                    throw new Exception("Invalid seat reservation data. Ensure all fields are populated correctly.");
+                }
+
+                _context.SeatReservations.AddRange(seats);
+
+
+                await _context.SaveChangesAsync();
+
+                // Commit the transaction if everything goes fine
+                await transaction.CommitAsync();
+
+                await ConfirmPayment(seats, 1);
+
+                return new { success = "Seats reserved successfully." };
             }
-
-            var _show = new Show();
-            _show.Name = show.Name;
-            _show.VenueId = show.VenueId;
-            _show.Date = show.Date;
-
-            _context.Shows.Add(_show);
-            _context.SaveChanges();
-
-            var _event = new ShowAddedEvent { ShowId = _show.ShowId };
-            await _eventPublisher.PublishAsync(_event);
+            catch (Exception ex)
+            {
+                return new { message = ex.Message };
+            }
         }
 
+
+        public async Task<object> ConfirmPayment(List<SeatReservation> seatIds, long userId)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            
+            try
+            {
+                _logger.LogInformation("Confirming payment for {seatIds}", seatIds);
+                var reservations = await _context.SeatReservations
+                    .Where(s => seatIds.Select(si => si.ShowSeatId).Contains(s.ShowSeatId) && s.UserId == userId && s.IsPaid == false)
+                    .ToListAsync();
+
+                if (reservations.Count == 0)
+                {
+                    return new { message = "Reservation not found or already expired." };
+                }
+
+                // Check if all reservations match the expected version
+                for (int i = 0; i < reservations.Count; i++)
+                {
+                    if (!reservations[i].RowVersion.SequenceEqual(seatIds[i].RowVersion))
+                    {
+                        return new { message = "One or more seat reservations have expired or been taken by another user." };
+                    }
+                }
+
+                // Confirm payment and mark seats as paid
+                foreach (var reservation in reservations)
+                {
+                    reservation.IsPaid = true;
+                }
+
+                await _context.ShowSeats.Where(
+                    s => reservations.Select(r => r.ShowSeatId).Contains(s.ShowSeatId)
+                ).ExecuteUpdateAsync(setters => 
+                setters.SetProperty(s => s.IsBooked, true)
+                .SetProperty(s => s.UserId, 1)
+                .SetProperty(s => s.BookingTime, DateTime.UtcNow)
+                );
+
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync(); // Commit if everything succeeds
+
+                return new { success = "Payment confirmed, seats booked successfully." };
+            }
+            catch (Exception ex)
+            {
+                return new { message = ex.Message };
+            }
+        }
+        
     }
 }

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ticket.Migrations
 {
     [DbContext(typeof(ShowDbContext))]
-    [Migration("20250116112522_updatedbmodel")]
-    partial class updatedbmodel
+    [Migration("20250318142856_fixrowversionmakeitop")]
+    partial class fixrowversionmakeitop
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,34 @@ namespace Ticket.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("JWTAuthServer.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Expires")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Show", b =>
                 {
@@ -135,7 +163,73 @@ namespace Ticket.Migrations
                     b.ToTable("StandSeats");
                 });
 
-            modelBuilder.Entity("ShowTickets.Ticketmodels.User", b =>
+            modelBuilder.Entity("ShowTickets.Ticketmodels.TicketSellingWindow", b =>
+                {
+                    b.Property<long>("TicketSellingWindowId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("TicketSellingWindowId"));
+
+                    b.Property<long>("ShowId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("enddate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("startdate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("TicketSellingWindowId");
+
+                    b.HasIndex("ShowId")
+                        .IsUnique();
+
+                    b.ToTable("ticketSellingWindows");
+                });
+
+            modelBuilder.Entity("ShowTickets.Ticketmodels.User.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Admin Role",
+                            Name = "Admin"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = " Editor Role",
+                            Name = "Editor"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "User Role",
+                            Name = "User"
+                        });
+                });
+
+            modelBuilder.Entity("ShowTickets.Ticketmodels.User.Users", b =>
                 {
                     b.Property<long>("UserId")
                         .ValueGeneratedOnAdd()
@@ -151,7 +245,19 @@ namespace Ticket.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<byte[]>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<byte[]>("PasswordSalt")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
                     b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -182,6 +288,17 @@ namespace Ticket.Migrations
                     b.HasKey("VenueId");
 
                     b.ToTable("Venues");
+                });
+
+            modelBuilder.Entity("JWTAuthServer.Models.RefreshToken", b =>
+                {
+                    b.HasOne("ShowTickets.Ticketmodels.User.Users", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Show", b =>
@@ -236,14 +353,33 @@ namespace Ticket.Migrations
                     b.Navigation("Stand");
                 });
 
+            modelBuilder.Entity("ShowTickets.Ticketmodels.TicketSellingWindow", b =>
+                {
+                    b.HasOne("ShowTickets.Ticketmodels.Show", "Show")
+                        .WithOne("ticketSellingWindow")
+                        .HasForeignKey("ShowTickets.Ticketmodels.TicketSellingWindow", "ShowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Show");
+                });
+
             modelBuilder.Entity("ShowTickets.Ticketmodels.Show", b =>
                 {
                     b.Navigation("ShowSeats");
+
+                    b.Navigation("ticketSellingWindow")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Stand", b =>
                 {
                     b.Navigation("StandSeats");
+                });
+
+            modelBuilder.Entity("ShowTickets.Ticketmodels.User.Users", b =>
+                {
+                    b.Navigation("RefreshTokens");
                 });
 
             modelBuilder.Entity("ShowTickets.Ticketmodels.Venue", b =>

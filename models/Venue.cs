@@ -7,6 +7,7 @@ namespace ShowTickets.Ticketmodels{
         public int TotalStands { get; set; }
 
         public ICollection<Stand> Stands { get; set; }
+        public ICollection<ShowSeat> ShowSeats { get; set; }
     }
 
 }

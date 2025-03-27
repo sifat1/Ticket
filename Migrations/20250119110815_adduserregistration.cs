@@ -7,11 +7,26 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ticket.Migrations
 {
     /// <inheritdoc />
-    public partial class updatedbmodel : Migration
+    public partial class adduserregistration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "ticketSellingWindows",
+                columns: table => new
+                {
+                    TicketSellingWindowID = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ShowId = table.Column<long>(type: "bigint", nullable: false),
+                    startdate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    enddate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ticketSellingWindows", x => x.TicketSellingWindowID);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
@@ -20,7 +35,9 @@ namespace Ticket.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Email = table.Column<string>(type: "text", nullable: false),
-                    PhoneNumber = table.Column<string>(type: "text", nullable: false)
+                    PhoneNumber = table.Column<string>(type: "text", nullable: false),
+                    PasswordHash = table.Column<byte[]>(type: "bytea", nullable: false),
+                    PasswordSalt = table.Column<byte[]>(type: "bytea", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -43,11 +60,29 @@ namespace Ticket.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "roles",
+                columns: table => new
+                {
+                    RoleId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    RoleName = table.Column<string>(type: "text", nullable: false),
+                    UsersUserId = table.Column<long>(type: "bigint", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_roles", x => x.RoleId);
+                    table.ForeignKey(
+                        name: "FK_roles_Users_UsersUserId",
+                        column: x => x.UsersUserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Shows",
                 columns: table => new
                 {
-                    ShowId = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ShowId = table.Column<long>(type: "bigint", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     VenueId = table.Column<long>(type: "bigint", nullable: false)
@@ -60,6 +95,12 @@ namespace Ticket.Migrations
                         column: x => x.VenueId,
                         principalTable: "Venues",
                         principalColumn: "VenueId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Shows_ticketSellingWindows_ShowId",
+                        column: x => x.ShowId,
+                        principalTable: "ticketSellingWindows",
+                        principalColumn: "TicketSellingWindowID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -135,6 +176,11 @@ namespace Ticket.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_roles_UsersUserId",
+                table: "roles",
+                column: "UsersUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Shows_VenueId",
                 table: "Shows",
                 column: "VenueId");
@@ -164,6 +210,9 @@ namespace Ticket.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "roles");
+
+            migrationBuilder.DropTable(
                 name: "ShowSeats");
 
             migrationBuilder.DropTable(
@@ -174,6 +223,9 @@ namespace Ticket.Migrations
 
             migrationBuilder.DropTable(
                 name: "StandSeats");
+
+            migrationBuilder.DropTable(
+                name: "ticketSellingWindows");
 
             migrationBuilder.DropTable(
                 name: "Stands");
