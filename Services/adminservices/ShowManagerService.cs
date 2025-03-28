@@ -50,6 +50,7 @@ namespace App.Services.Manager
             _show.Name = show.Name;
             _show.VenueId = show.VenueId;
             _show.Date = show.Date;
+            _show.Description = show.Description;
 
             _context.Shows.Add(_show);
 

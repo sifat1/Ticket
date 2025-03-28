@@ -1,5 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using DB.DBcontext;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ShowTickets.Ticketmodels;
 
 namespace App.Services
@@ -9,12 +13,14 @@ namespace App.Services
         private readonly ShowDbContext _context;
         private readonly EventPublisher _eventPublisher;
         private readonly ILogger<ShowService> _logger;
+        private readonly IConfiguration _config;
 
-        public ShowService(ShowDbContext context, EventPublisher eventPublisher, ILogger<ShowService> logger)
+        public ShowService(ShowDbContext context, EventPublisher eventPublisher, ILogger<ShowService> logger, IConfiguration config)
         {
             _context = context;
             _eventPublisher = eventPublisher;
             _logger = logger;
+            _config = config;
         }
 
         public async Task<List<Stand>> getstands(int venueid)
@@ -103,10 +109,11 @@ namespace App.Services
             }
         }
 
-        public async Task<object> ReserveSeats(List<ShowTicketPriceDTO> seatIds)
+        public async Task<object> ReserveSeats(List<ShowTicketPriceDTO> seatIds, long userId)
         {
             try
             {
+
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 _logger.LogInformation("Reserving seats for {seatIds}", seatIds);
 
@@ -135,7 +142,7 @@ namespace App.Services
                     ShowId = seatId.ShowId, // Ensure the ShowId is populated correctly
                     VenueId = seatId.VenueId, // Ensure the VenueId is populated correctly
                     StandId = seatId.StandId, // Ensure the StandId is populated correctly
-                    UserId = 1, // Use the actual user ID here
+                    UserId = userId, // Use the actual user ID here
                     ExpirationTime = expirationTime,
                     IsPaid = false,
                     Price = seatId.Price, // Ensure the price is set correctly
@@ -157,7 +164,7 @@ namespace App.Services
                 // Commit the transaction if everything goes fine
                 await transaction.CommitAsync();
 
-                await ConfirmPayment(seats, 1);
+                await ConfirmPayment(seats, userId);
 
                 return new { success = "Seats reserved successfully." };
             }
@@ -170,54 +177,223 @@ namespace App.Services
 
         public async Task<object> ConfirmPayment(List<SeatReservation> seatIds, long userId)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            
+            if (seatIds == null || seatIds.Count == 0)
+            {
+                return new { error = "No seats to confirm." };
+            }
+
+            if (userId <= 0)
+            {
+                return new { error = "Invalid user ID." };
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
             try
             {
-                _logger.LogInformation("Confirming payment for {seatIds}", seatIds);
+                _logger.LogInformation("Confirming payment for user {userId} with seatIds: {@seatIds}", userId, seatIds);
+
+                var seatIdList = seatIds.Select(si => si.ShowSeatId).ToList();
                 var reservations = await _context.SeatReservations
-                    .Where(s => seatIds.Select(si => si.ShowSeatId).Contains(s.ShowSeatId) && s.UserId == userId && s.IsPaid == false)
+                    .Where(s => seatIdList.Contains(s.ShowSeatId) && !s.IsPaid)
                     .ToListAsync();
 
                 if (reservations.Count == 0)
                 {
-                    return new { message = "Reservation not found or already expired." };
+                    return new { error = "Reservation not found or already expired." };
                 }
 
-                // Check if all reservations match the expected version
-                for (int i = 0; i < reservations.Count; i++)
+                // Convert to dictionary for row version check
+                var seatIdDict = seatIds.ToDictionary(s => s.ShowSeatId, s => s.RowVersion);
+
+                foreach (var reservation in reservations)
                 {
-                    if (!reservations[i].RowVersion.SequenceEqual(seatIds[i].RowVersion))
+                    if (!seatIdDict.TryGetValue(reservation.ShowSeatId, out var expectedRowVersion) ||
+                        !reservation.RowVersion.SequenceEqual(expectedRowVersion))
                     {
-                        return new { message = "One or more seat reservations have expired or been taken by another user." };
+                        return new { error = "One or more seat reservations have expired or been taken by another user." };
                     }
                 }
 
-                // Confirm payment and mark seats as paid
+                // Mark seats as paid
                 foreach (var reservation in reservations)
                 {
                     reservation.IsPaid = true;
                 }
 
-                await _context.ShowSeats.Where(
-                    s => reservations.Select(r => r.ShowSeatId).Contains(s.ShowSeatId)
-                ).ExecuteUpdateAsync(setters => 
-                setters.SetProperty(s => s.IsBooked, true)
-                .SetProperty(s => s.UserId, 1)
-                .SetProperty(s => s.BookingTime, DateTime.UtcNow)
+                var tokens = reservations.ToDictionary(
+                    r => r.ShowSeatId,
+                    r => GenerateJwtToken(r.ShowSeatId, r.ShowId, userId)
                 );
 
-                await _context.SaveChangesAsync();
+                // Fetch seats to update manually (because ExecuteUpdateAsync can't use dictionary)
+                var seatsToUpdate = await _context.ShowSeats.Where(s => seatIdList.Contains(s.ShowSeatId)).ToListAsync();
+                foreach (var seat in seatsToUpdate)
+                {
+                    seat.IsBooked = true;
+                    seat.UserId = userId;
+                    seat.BookingTime = DateTime.UtcNow;
+                    seat.Token = tokens[seat.ShowSeatId]; // Use pre-generated token
+                }
 
-                await transaction.CommitAsync(); // Commit if everything succeeds
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 return new { success = "Payment confirmed, seats booked successfully." };
             }
             catch (Exception ex)
             {
-                return new { message = ex.Message };
+                _logger.LogError(ex, "Error confirming payment for user {userId}", userId);
+                await transaction.RollbackAsync();
+                return new { error = ex.Message };
             }
         }
-        
+
+
+        public async Task<object> GenerateQR(long seatId, long userId)
+        {
+            try
+            {
+                _logger.LogInformation("Generating QR code for {seatIds}", seatId);
+                var seats = await _context.ShowSeats
+                    .Where(s => s.ShowSeatId == seatId && s.IsBooked == true)
+                    .Select(s => s.Token)
+                    .FirstAsync();
+
+                if (seats.Count() == 0)
+                {
+                    return new { message = "Reservation not found or already expired." };
+                }
+
+                var qrCodes = new List<string>();
+
+                foreach (var s in seats)
+                {
+                    var qrCode = Guid.NewGuid().ToString();
+                    //reservation.QRCode = qrCode;
+                    qrCodes.Add(qrCode);
+                }
+
+
+                return new { success = "QR codes generated successfully.", qrCodes };
+            }
+            catch (Exception ex)
+            {
+                return new { message = ex.Message };
+            }
+
+        }
+
+        private string GenerateJwtToken(long ShowSeatId, long ShowId, long userId)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["qrsecret"]));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new List<Claim>
+        {
+            new Claim("TicketId", ShowSeatId.ToString()),
+            new Claim("EventName", ShowId.ToString()),
+            new Claim("UserId", userId.ToString()),
+            //new Claim("Expiry", ticket.Expiry.ToString("o")) // ISO 8601 format
+        };
+
+            var token = new JwtSecurityToken(
+                issuer: "your-api.com",
+                audience: "your-app",
+                claims: claims,
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public async Task<object> VerifyTicket(string qrToken)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["qrsecret"]));
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            try
+            {
+                var validationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidIssuer = "your-api.com",
+                    ValidAudience = "your-app",
+                    ValidateLifetime = true,
+                    IssuerSigningKey = securityKey
+                };
+
+                var principal = tokenHandler.ValidateToken(qrToken, validationParameters, out _);
+                var claims = principal.Claims.ToDictionary(c => c.Type, c => c.Value);
+
+                var ticket = await _context.ShowSeats
+                    .Where(s => s.ShowSeatId == long.Parse(claims["TicketId"]) && s.UserId == long.Parse(claims["UserId"]))
+                    .FirstOrDefaultAsync();
+
+                if (ticket == null)
+                {
+                    return new { message = "Invalid or Expired Ticket" };
+                }
+
+                ticket.IsTokenUsed = true;
+                ticket.TokenUsedTime = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                return new
+                {
+                    message = "Valid Ticket",
+                    ticketId = ticket.StandSeatId,
+                    stand = ticket.Stand.Name,
+                    venue = ticket.Venue.Name,
+                    show = ticket.Show.Name,
+                };
+            }
+            catch (Exception)
+            {
+                return new { message = "Invalid or Expired Ticket" };
+            }
+        }
+
+        internal async Task<List<BookedSeatDTO>> GetUserBookedShowSeatAsync(string userId)
+        {
+            try
+            {
+                _logger.LogInformation("Getting booked seats for user with ID: {UserId}", userId);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+                }
+                var bookedSeats = await _context.ShowSeats
+                    .Where(s => s.UserId == long.Parse(userId) && s.IsBooked == true)
+                    .Include(s => s.Stand)
+                    .Include(s => s.Venue)
+                    .Include(s => s.Show)
+                    .Include(s => s.StandSeat)
+                    .Select(s => new BookedSeatDTO
+                    {
+                        ShowSeatId = s.ShowSeatId,
+                        ShowId = s.ShowId,
+                        ShowName = s.Show.Name,
+                        Venuename = s.Venue.Name,
+                        StandName = s.Stand.Name,
+                        StandSeatId = s.StandSeatId,
+                        ShowDate = s.Show.Date.ToString("yyyy-MM-dd"),
+                        ShowTime = s.Show.Date.ToString("hh:mm tt"),
+                        Token = s.Token,
+                        IsTokenUsed = s.IsTokenUsed,
+                        TokenUsedTime = s.TokenUsedTime,
+                        BookingTime = s.BookingTime,
+                        IsBooked = s.IsBooked
+                    })
+                    .ToListAsync();
+
+                return bookedSeats;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving booked seats: {ex.Message}");
+            }
+        }
     }
 }

@@ -67,6 +67,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
 });
 
+builder.Services.AddHttpContextAccessor();
+
 //  Now build the app
 var app = builder.Build();
 

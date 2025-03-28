@@ -7,6 +7,8 @@ namespace Dtos{
         public required string Name { get; set; }
         [Required]
         public long VenueId { get; set; }
+
+        public string? Description { get; set; }
         [Required]
         [DataType(DataType.DateTime)]
         public DateTime Date { get; set; }
