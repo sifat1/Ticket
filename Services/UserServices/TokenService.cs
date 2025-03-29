@@ -26,6 +26,7 @@ public class TokenService
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()), // Adding UserId in Token
             new Claim(ClaimTypes.Role, user.Role)  // Adding Role in Token
         };
 

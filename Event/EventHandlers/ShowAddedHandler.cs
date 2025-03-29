@@ -47,6 +47,7 @@ namespace Ticket.EventHandler
                 StandSeatId = seat.StandSeatId,
                 StandId = seat.StandId,
                 VenueId = venueId,
+                Token = Guid.NewGuid().ToString(),
                 IsBooked = false
             }).ToList();
 
