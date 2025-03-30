@@ -11,6 +11,8 @@ namespace App.Services.Manager
         private readonly ShowDbContext _context;
         private readonly EventPublisher _eventPublisher;
         private readonly ILogger<ShowService> _logger;
+        private readonly string _ShowThumnilePath = Path.Combine(Directory.GetCurrentDirectory(), "ShowThumnile");
+
 
         public ShowManagerService(ShowDbContext context, EventPublisher eventPublisher, ILogger<ShowService> logger)
         {
@@ -46,12 +48,30 @@ namespace App.Services.Manager
                 throw new ArgumentNullException(nameof(show));
             }
 
+            if (show.Photo != null && show.Photo.Length > 0)
+            {
+                if (!Directory.Exists(_ShowThumnilePath))
+                {
+                    Directory.CreateDirectory(_ShowThumnilePath);
+                }
+
+                var photoFileName = $"{Guid.NewGuid()}_{show.Photo.FileName}";
+                var photoFilePath = Path.Combine(_ShowThumnilePath, photoFileName);
+
+                using (var stream = new FileStream(photoFilePath, FileMode.Create))
+                {
+                    await show.Photo.CopyToAsync(stream);
+                }
+
+                show.PhotoPath = photoFileName;
+            }
+
             var _show = new Show();
             _show.Name = show.Name;
             _show.VenueId = show.VenueId;
             _show.Date = show.Date;
             _show.Description = show.Description;
-
+            _show.ThumnileFilePath = show.PhotoPath;
             _context.Shows.Add(_show);
 
             var _datewindow = new TicketSellingWindow();

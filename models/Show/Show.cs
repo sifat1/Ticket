@@ -6,8 +6,11 @@ namespace ShowTickets.Ticketmodels{
 
         public string Description { get; set; }
         public DateTime Date { get; set; }
+
+        public string? ThumnileFilePath { get; set; }
         public long VenueId { get; set; }
         public Venue Venue { get; set; }
+
 
         public ICollection<ShowSeat> ShowSeats { get; set; }
 
