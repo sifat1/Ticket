@@ -6,11 +6,14 @@ using Hangfire;
 using JWTAuthServer.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Ticket.EventHandler;
 using User.Registration;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
 
 // Configure CORS
 builder.Services.AddCors(options =>
@@ -22,6 +25,8 @@ builder.Services.AddCors(options =>
                .AllowAnyHeader(); // Allow any headers
     });
 });
+
+
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -71,6 +76,16 @@ builder.Services.AddHttpContextAccessor();
 
 //  Now build the app
 var app = builder.Build();
+
+app.UseStaticFiles(); // ✅ Serves files from wwwroot
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "ShowThumnile")),
+    RequestPath = "/ShowThumnile"
+});
+
 
 app.UseHangfireDashboard();
 app.MapHangfireDashboard();

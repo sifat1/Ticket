@@ -30,7 +30,7 @@ namespace App.Services.Manager
 
             if (getshow == null)
                 throw new ArgumentNullException(nameof(getshow));
-            
+
             _context.ticketSellingWindows.Add(new TicketSellingWindow
             {
                 ShowId = showOpening.ShowId,
@@ -43,6 +43,7 @@ namespace App.Services.Manager
 
         public async Task AddShowTask(CreateShow show)
         {
+
             if (show == null)
             {
                 throw new ArgumentNullException(nameof(show));
@@ -60,7 +61,7 @@ namespace App.Services.Manager
 
                 using (var stream = new FileStream(photoFilePath, FileMode.Create))
                 {
-                    await show.Photo.CopyToAsync(stream);
+                     show.Photo.CopyTo(stream);
                 }
 
                 show.PhotoPath = photoFileName;
@@ -78,13 +79,20 @@ namespace App.Services.Manager
             _datewindow.startdate = show.startwindow;
             _datewindow.enddate = show.endwindow;
             _datewindow.Show = _show;
+
             _context.ticketSellingWindows.Add(_datewindow);
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             _context.SaveChanges();
 
             //await SetTicketOpeningAsync(new ShowOpening { ShowId = _show.ShowId, StartDate = show.startwindow, EndDate = show.endwindow });
 
-            var _event = new ShowAddedEvent { ShowId = _show.ShowId };
-            try{
+            
+            try
+            {
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                var _event = new ShowAddedEvent { ShowId = _show.ShowId };
                 await _eventPublisher.PublishAsync(_event);
             }
             catch (Exception ex)

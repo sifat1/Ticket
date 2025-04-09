@@ -45,6 +45,7 @@ namespace App.Controllers
         {
             try
             {
+
                 return Ok(await _showService.GetTicketOpeningAsync());
             }
             catch (Exception ex)

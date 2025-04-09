@@ -20,6 +20,6 @@ namespace Dtos{
         public DateTime endwindow { get; set; }
 
         public IFormFile? Photo { get; set; }
-        public string PhotoPath { get; internal set; }
+        public string? PhotoPath { get; internal set; }
     }
 }
