@@ -18,5 +18,8 @@ namespace Dtos{
         [Required]
         [DataType(DataType.DateTime)]
         public DateTime endwindow { get; set; }
+
+        public IFormFile? Photo { get; set; }
+        public string? PhotoPath { get; internal set; }
     }
 }

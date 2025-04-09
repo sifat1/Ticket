@@ -14,13 +14,17 @@ namespace App.Services
         private readonly EventPublisher _eventPublisher;
         private readonly ILogger<ShowService> _logger;
         private readonly IConfiguration _config;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ShowService(ShowDbContext context, EventPublisher eventPublisher, ILogger<ShowService> logger, IConfiguration config)
+        public ShowService(ShowDbContext context, EventPublisher eventPublisher,
+        ILogger<ShowService> logger, IConfiguration config,
+        IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _eventPublisher = eventPublisher;
             _logger = logger;
             _config = config;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<List<Stand>> getstands(int venueid)
@@ -70,17 +74,33 @@ namespace App.Services
                 .ToListAsync();
         }
 
-        public async Task<List<Show>> GetTicketOpeningAsync()
+        public async Task<List<TicketOpeningDto>> GetTicketOpeningAsync()
         {
             _logger.LogInformation("Getting shows with open ticket sales.");
-            var localNow = DateTime.UtcNow; // Convert to local time, making it timestamp
+            var localNow = DateTime.UtcNow;
 
-            List<Show> selectedshow = await _context.ticketSellingWindows.Where(
-                    p => p.enddate > localNow && p.startdate < localNow)
-                .Select(p => p.Show).ToListAsync();
+            var request = _httpContextAccessor.HttpContext?.Request;
+            var baseUrl = request != null ? $"{request.Scheme}://{request.Host}/ShowThumnile/" : string.Empty;
 
-            return selectedshow;
+            var selectedshow = await _context.ticketSellingWindows
+                .Where(p => p.enddate > localNow && p.startdate < localNow)
+                .Select(p => new TicketOpeningDto // ✅ Use the DTO instead of an anonymous type
+                {
+                    ShowId = p.Show.ShowId,
+                    ShowName = p.Show.Name,
+                    ShowDate = p.Show.Date.ToString("yyyy-MM-dd"),
+                    ShowTime = p.Show.Date.ToString("hh:mm tt"),
+                    VenueId = p.Show.VenueId,
+                    VenueName = p.Show.Venue.Name,
+                    VenueLocation = p.Show.Venue.Location,
+                    PhotoUrl = !string.IsNullOrEmpty(p.Show.ThumnileFilePath) ? baseUrl + p.Show.ThumnileFilePath : null
+                })
+                .ToListAsync();
+
+            return selectedshow; // ✅ Now returns List<TicketOpeningDto>
         }
+
+
 
         public async Task<object> GetTicketPrice(List<ShowTicketPriceDTO> tickets)
         {

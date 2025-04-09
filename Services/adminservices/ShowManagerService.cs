@@ -11,6 +11,8 @@ namespace App.Services.Manager
         private readonly ShowDbContext _context;
         private readonly EventPublisher _eventPublisher;
         private readonly ILogger<ShowService> _logger;
+        private readonly string _ShowThumnilePath = Path.Combine(Directory.GetCurrentDirectory(), "ShowThumnile");
+
 
         public ShowManagerService(ShowDbContext context, EventPublisher eventPublisher, ILogger<ShowService> logger)
         {
@@ -28,7 +30,7 @@ namespace App.Services.Manager
 
             if (getshow == null)
                 throw new ArgumentNullException(nameof(getshow));
-            
+
             _context.ticketSellingWindows.Add(new TicketSellingWindow
             {
                 ShowId = showOpening.ShowId,
@@ -41,9 +43,28 @@ namespace App.Services.Manager
 
         public async Task AddShowTask(CreateShow show)
         {
+
             if (show == null)
             {
                 throw new ArgumentNullException(nameof(show));
+            }
+
+            if (show.Photo != null && show.Photo.Length > 0)
+            {
+                if (!Directory.Exists(_ShowThumnilePath))
+                {
+                    Directory.CreateDirectory(_ShowThumnilePath);
+                }
+
+                var photoFileName = $"{Guid.NewGuid()}_{show.Photo.FileName}";
+                var photoFilePath = Path.Combine(_ShowThumnilePath, photoFileName);
+
+                using (var stream = new FileStream(photoFilePath, FileMode.Create))
+                {
+                     show.Photo.CopyTo(stream);
+                }
+
+                show.PhotoPath = photoFileName;
             }
 
             var _show = new Show();
@@ -51,20 +72,27 @@ namespace App.Services.Manager
             _show.VenueId = show.VenueId;
             _show.Date = show.Date;
             _show.Description = show.Description;
-
+            _show.ThumnileFilePath = show.PhotoPath;
             _context.Shows.Add(_show);
 
             var _datewindow = new TicketSellingWindow();
             _datewindow.startdate = show.startwindow;
             _datewindow.enddate = show.endwindow;
             _datewindow.Show = _show;
+
             _context.ticketSellingWindows.Add(_datewindow);
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             _context.SaveChanges();
 
             //await SetTicketOpeningAsync(new ShowOpening { ShowId = _show.ShowId, StartDate = show.startwindow, EndDate = show.endwindow });
 
-            var _event = new ShowAddedEvent { ShowId = _show.ShowId };
-            try{
+            
+            try
+            {
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                var _event = new ShowAddedEvent { ShowId = _show.ShowId };
                 await _eventPublisher.PublishAsync(_event);
             }
             catch (Exception ex)
