@@ -1,4 +1,4 @@
-# Ticket Management System
+# Ticket Booking System
 
 This project is a **C# Ticket Booking System** designed to streamline the process Booking tickets for various Shows.
 
@@ -30,10 +30,12 @@ This project is a **C# Ticket Booking System** designed to streamline the proces
 3. Assign tickets to team members and track their progress.
 
 ## Screenshots
-_Add your screenshots here:_
 
 ![Screenshot 1](Screenshots/screen1.png)
-![Screenshot 2](path/to/image2.png)
+![Screenshot 2](Screenshots/s2.png)
+![Screenshot 3](Screenshots/s3.png)
+![Screenshot 4](Screenshots/s4.png)
+![Screenshot 5](Screenshots/s5.png)
 
 ## Contributing
 Contributions are welcome! Please fork the repository and submit a pull request.
